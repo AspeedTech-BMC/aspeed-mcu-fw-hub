@@ -1,0 +1,45 @@
+# Copyright (c) 2026 ASPEED Technology Inc.
+# SPDX-License-Identifier: MIT
+
+load("//bazel:zephyr.bzl", "zephyr_west_build")
+load("//bazel:manifest.bzl", "manifest_targets")
+load("//bazel:image.bzl", "image_targets")
+
+zephyr_west_build(
+    name = "cm4",
+    board = "ast1040_evb/ast1040/cm4",
+    app = "zephyr/samples/subsys/shell/shell_module",
+    output_bin = "zephyr-shell-module.bin",
+    role = "cm4",
+)
+
+zephyr_west_build(
+    name = "bootmcu",
+    board = "ast1040_evb/ast1040/bootmcu",
+    app = "aspeed-zephyr-project/apps/mcu-runtime",
+    output_bin = "zephyr-mcu-runtime.bin",
+    role = "bootmcu",
+)
+
+manifest_targets(
+    platform = "ast1080",
+    chip = "ast1040a0",
+    cm4_target = ":cm4",
+    bootmcu_target = ":bootmcu",
+    manifest_cfg = "config/ast1040a0-default-ecc-lms-mldsa-manifest.toml",
+    ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
+    ssmcu_rom_target = "//ast1080/ast1080a0:ssmcu-rom",
+    bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
+)
+
+image_targets(
+    platform = "ast1080",
+    chip = "ast1040a0",
+    image_size_kb = 4096,
+    ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom",
+    ssmcu_rom_seek_kb = 0,
+    bootmcu_rom_bin = "//ast1080/ast1080a0:ast1040_xip_rom_vf402_f1a1817.bin",
+    bootmcu_rom_seek_kb = 512,
+    manifest_image = ":aspeed-manifest-flash-image.bin",
+    manifest_image_seek_kb = 1024,
+)

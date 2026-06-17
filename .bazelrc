@@ -1,0 +1,8 @@
+try-import %workspace%/.bazelrc.local
+build --strategy=Genrule=local
+build --verbose_failures
+
+# ad-hoc override
+# usage: bazel build //ast1040:image \
+#   --//flags:cm4_zephyr_board=xxx --//flags:cm4_zephyr_app=yyy \
+#   --//flags:bootmcu_zephyr_board=aaa --//flags:bootmcu_zephyr_app=bbb

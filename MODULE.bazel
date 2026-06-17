@@ -1,0 +1,72 @@
+module(name = "aspeed_build")
+
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+_local_repo = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:local.bzl",
+    "new_local_repository",
+)
+
+# Zephyr: track all source directories, exclude build outputs and git metadata
+_local_repo(
+    name = "zephyr_ws",
+    path = "zephyr-workspace",
+    build_file_content = """
+filegroup(
+    name = "all",
+    srcs = glob([
+        "aspeed-zephyr-project/**",
+        "zephyr/**",
+        "modules/**",
+        "bootloader/**",
+        "middlewares/**",
+        ".west/config",
+    ], exclude = ["**/.git/**", "build/**"]),
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# caliptra-mcu-sw: track only Cargo files and source, exclude build artifacts
+_local_repo(
+    name = "caliptra_mcu_sw",
+    path = "caliptra-mcu-sw",
+    build_file_content = """
+filegroup(
+    name = "all",
+    srcs = glob(
+        ["**"],
+        exclude = ["**/.git/**", "target/**"],
+    ),
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+_local_repo(
+    name = "cptra_imgtool",
+    path = "cptra_imgtool",
+    build_file_content = """
+filegroup(
+    name = "all",
+    srcs = glob(
+        ["**"],
+        exclude = ["**/.git/**", "target/**", "out/**"],
+    ),
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# bmc-pb: only pre-built binaries
+_local_repo(
+    name = "bmc_pb",
+    path = "bmc-pb",
+    build_file_content = """
+filegroup(
+    name = "all",
+    srcs = glob(["**/*.bin"], exclude = ["**/.git/**"]),
+    visibility = ["//visibility:public"],
+)
+""",
+)

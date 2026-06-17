@@ -1,0 +1,13 @@
+caliptra-mcu-sw
+cptra_imgtool
+bmc-pb
+zephyr-workspace
+zephyr-sdk-0.16.9
+bazel-out
+bazel-bin
+bazel-testlogs
+.cargo
+.rustup
+.git
+.stage
+.venv

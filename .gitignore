@@ -1,0 +1,25 @@
+# Bazel
+.bazelrc.local
+MODULE.bazel.lock
+bazel-*
+
+# Python venv
+.venv/
+
+# Rust toolchain
+.cargo/
+.rustup/
+
+# Build outputs
+build/
+.stage/
+
+# External repos (fetched by setup.sh)
+caliptra-mcu-sw/
+cptra_imgtool/
+zephyr-workspace/
+zephyr-sdk-*/
+tools/
+
+# Project-specific
+bmc-pb/
