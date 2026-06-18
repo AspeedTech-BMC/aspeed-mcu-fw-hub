@@ -28,7 +28,6 @@ manifest_targets(
     bootmcu_target = ":bootmcu",
     manifest_cfg = "config/ast1040a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1040/ast1040a0:ssmcu-runtime",
-    ssmcu_rom_target = "//ast1040/ast1040a0:ssmcu-rom",
     bmc_pb_target = "//ast1040/ast1040a0:bmc-pb",
 )
 
@@ -36,7 +35,7 @@ image_targets(
     platform = "ast1040",
     chip = "ast1040a0",
     image_size_kb = 4096,
-    ssmcu_rom_bin = "//ast1040/ast1040a0:ssmcu-rom",
+    ssmcu_rom_bin = "//ast1040/ast1040a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
     bootmcu_rom_bin = "//ast1040/ast1040a0:ast1040_xip_rom_vf402_f1a1817.bin",
     bootmcu_rom_seek_kb = 512,

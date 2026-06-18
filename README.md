@@ -119,7 +119,6 @@ bazel build //ast1080/ast1080a0/dcscm:image
 | `bazel build //ast1040/ast1040a0/evb:cm4`        | Zephyr CM4 firmware            |
 | `bazel build //ast1040/ast1040a0/evb:bootmcu`    | Zephyr bootmcu runtime         |
 | `bazel build //ast1040/ast1040a0:ssmcu-runtime`  | Caliptra MCU runtime (Rust)    |
-| `bazel build //ast1040/ast1040a0:ssmcu-rom`      | Caliptra MCU ROM (Rust)        |
 | `bazel build //ast1040/ast1040a0:bmc-pb`         | Copy bmc-pb prebuilt binaries  |
 | `bazel build //ast1040/ast1040a0/evb:manifest`   | Create auth flash manifest     |
 | `bazel build //ast1040/ast1040a0/evb:image`      | Assemble final flash image     |
@@ -140,7 +139,7 @@ bazel build //ast1040/ast1040a0/evb:image \
 
 ```
 Offset      Hex          File
-0 KB        0x00000000   ssmcu-rom (mcu-rom-*-aspeed-xip.bin)
+0 KB        0x00000000   bmc-pb SSMCU ROM (ssmcu ROM)
 512 KB      0x00080000   bmc-pb XIP ROM (bootmcu ROM)
 1024 KB     0x00100000   aspeed-manifest-flash-image.bin
 ```

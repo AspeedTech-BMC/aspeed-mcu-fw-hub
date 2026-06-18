@@ -3,7 +3,7 @@
 
 _TOOL = "target/tools/cptra_2x"
 
-def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, ssmcu_rom_target, bmc_pb_target,
+def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_target,
                      manifest_cfg, bootmcu_target = None):
     _IMAGE_PREFIX = "{}-default".format(chip)
     _MANIFEST_CFG = manifest_cfg
@@ -12,7 +12,6 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, ssmcu_rom
     _srcs = [
         cm4_target,
         ssmcu_runtime_target,
-        ssmcu_rom_target,
         bmc_pb_target,
         "@cptra_imgtool//:all",
         "@caliptra_mcu_sw//:all",
@@ -23,7 +22,6 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, ssmcu_rom
     _install_input_lines = [
         "install -m 644 $(location {}) $$STAGE/".format(cm4_target),
         "install -m 644 $(location {}) $$STAGE/".format(ssmcu_runtime_target),
-        "install -m 644 $(location {}) $$STAGE/".format(ssmcu_rom_target),
         "install -m 644 $(locations {}) $$STAGE/".format(bmc_pb_target),
     ]
     if bootmcu_target != None:

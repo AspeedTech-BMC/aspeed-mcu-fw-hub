@@ -9,12 +9,11 @@ _RISCV = "target/riscv32imc-unknown-none-elf/release"
 bmc_pb_target(pb = [
     "ast1040a0/ast1040_xip_rom_vf402_f1a1817.bin",
     "ast1040a0/caliptra-fw.bin",
+    "ast1040a0/ssmcu-rom-xip.bin",
 ])
 
 caliptra_targets(
     platform = "ast1040",
     ssmcu_runtime_bin = "{}/runtime-ast1040.bin".format(_RISCV),
-    ssmcu_rom_bin = "{}/mcu-rom-ast1040-aspeed-xip.bin".format(_RISCV),
     ssmcu_runtime_out = "ssmcu-runtime.bin",
-    ssmcu_rom_out = "ssmcu-rom.bin",
 )
