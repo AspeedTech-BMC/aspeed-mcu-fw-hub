@@ -5,15 +5,17 @@ def image_targets(
         platform,
         chip,
         image_size_kb,
-        ssmcu_rom_bin,
         manifest_image,
         manifest_image_seek_kb,
+        ssmcu_rom_bin = None,
         ssmcu_rom_seek_kb = 0,
         bootmcu_rom_bin = None,
         bootmcu_rom_seek_kb = 512):
     _C = chip + "-default"
 
-    _srcs = [ssmcu_rom_bin, manifest_image]
+    _srcs = [manifest_image]
+    if ssmcu_rom_bin != None:
+        _srcs.append(ssmcu_rom_bin)
     if bootmcu_rom_bin != None:
         _srcs.append(bootmcu_rom_bin)
 
@@ -22,11 +24,15 @@ def image_targets(
         "OUTDIR=$$(realpath $(@D))",
         "IMAGE=$$OUTDIR/{}.bin".format(platform),
         "IMAGE_SIZE_KB={}".format(image_size_kb),
-        "MCU_ROM_BIN=$$(realpath $(location {}))".format(ssmcu_rom_bin),
         "MANIFEST_IMAGE=$$(realpath $(location {}))".format(manifest_image),
         "dd if=/dev/zero bs=1K count=$$IMAGE_SIZE_KB | tr '\\000' '\\377' > $$IMAGE",
-        "dd if=$$MCU_ROM_BIN of=$$IMAGE bs=1K seek={} conv=notrunc".format(ssmcu_rom_seek_kb),
     ]
+
+    if ssmcu_rom_bin != None:
+        cmd_lines.append(
+            "dd if=$$(realpath $(location {})) of=$$IMAGE bs=1K seek={} conv=notrunc".format(
+                ssmcu_rom_bin, ssmcu_rom_seek_kb)
+        )
 
     if bootmcu_rom_bin != None:
         cmd_lines.append(
