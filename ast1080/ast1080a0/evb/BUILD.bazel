@@ -7,7 +7,7 @@ load("//bazel:image.bzl", "image_targets")
 
 zephyr_west_build(
     name = "cm4",
-    board = "ast1040_evb/ast1040/cm4",
+    board = "ast1080_evb/ast1080/cm4",
     app = "zephyr/samples/subsys/shell/shell_module",
     output_bin = "zephyr-shell-module.bin",
     role = "cm4",
@@ -23,17 +23,17 @@ zephyr_west_build(
 
 manifest_targets(
     platform = "ast1080",
-    chip = "ast1040a0",
+    chip = "ast1080a0",
     cm4_target = ":cm4",
     bootmcu_target = ":bootmcu",
-    manifest_cfg = "config/ast1040a0-default-ecc-lms-mldsa-manifest.toml",
+    manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
 )
 
 image_targets(
     platform = "ast1080",
-    chip = "ast1040a0",
+    chip = "ast1080a0",
     image_size_kb = 4096,
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
