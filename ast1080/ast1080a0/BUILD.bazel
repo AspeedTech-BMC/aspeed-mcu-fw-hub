@@ -7,7 +7,7 @@ load("//bazel:bmc_pb.bzl", "bmc_pb_target")
 _RISCV = "target/riscv32imc-unknown-none-elf/release"
 
 bmc_pb_target(pb = [
-    "ast1040a0/ast1040_xip_rom_vf402_f1a1817.bin",
+    "ast1040a0/boomcu-rom-xip.bin",
     "ast1040a0/caliptra-fw.bin",
     "ast1040a0/ssmcu-rom-xip.bin",
 ])

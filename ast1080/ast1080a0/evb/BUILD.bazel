@@ -37,7 +37,7 @@ image_targets(
     image_size_kb = 4096,
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
-    bootmcu_rom_bin = "//ast1080/ast1080a0:ast1040_xip_rom_vf402_f1a1817.bin",
+    bootmcu_rom_bin = "//ast1080/ast1080a0:boomcu-rom-xip.bin",
     bootmcu_rom_seek_kb = 512,
     manifest_image = ":aspeed-manifest-flash-image.bin",
     manifest_image_seek_kb = 1024,
