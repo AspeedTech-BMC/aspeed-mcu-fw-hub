@@ -10,7 +10,8 @@ def image_targets(
         ssmcu_rom_bin = None,
         ssmcu_rom_seek_kb = 0,
         bootmcu_rom_bin = None,
-        bootmcu_rom_seek_kb = 512):
+        bootmcu_rom_seek_kb = 512,
+        visibility = None):
     _C = chip + "-default"
 
     _srcs = [manifest_image]
@@ -54,4 +55,5 @@ def image_targets(
         outs = [platform + ".bin"],
         cmd = cmd,
         local = True,
+        visibility = visibility,
     )

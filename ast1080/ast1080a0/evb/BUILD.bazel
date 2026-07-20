@@ -11,6 +11,7 @@ zephyr_west_build(
     app = "zephyr/samples/subsys/shell/shell_module",
     output_bin = "zephyr-shell-module.bin",
     role = "cm4",
+    visibility = ["//qemu:__pkg__"],
 )
 
 zephyr_west_build(
@@ -41,4 +42,5 @@ image_targets(
     bootmcu_rom_seek_kb = 512,
     manifest_image = ":aspeed-manifest-flash-image.bin",
     manifest_image_seek_kb = 1024,
+    visibility = ["//qemu:__pkg__"],
 )

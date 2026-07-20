@@ -1,7 +1,7 @@
 # Copyright (c) 2026 ASPEED Technology Inc.
 # SPDX-License-Identifier: MIT
 
-load("//bazel:qemu.bzl", "qemu_build")
+load("//bazel:qemu.bzl", "qemu_build", "qemu_run")
 
 # bazel build //qemu:dist — fetches @qemu_src (pinned commit, see
 # MODULE.bazel) and builds it locally. Tagged "manual" so it's isolated from
@@ -11,4 +11,55 @@ qemu_build(
     name = "dist",
     target_list = "arm-softmmu",
     configure_opts = "",
+)
+
+exports_files(["run_qemu.sh"])
+
+# bazel run //qemu:ast1040a0_evb / :ast1080a0_evb / :ast1080a0_dcscm
+# All three run on "ast1040-evb" (needs the machine model patch under
+# qemu/patches/ — AST1080 has no machine model of its own, it's
+# register-compatible with AST1040). Each boots two ways at once: -kernel
+# loads the Zephyr CM4 firmware directly, and internal_flash_image is
+# mounted as a writable w25q33pw SPI-NOR chip (see run_qemu.sh) so guest
+# firmware can actually read/write flash without touching the build output.
+qemu_run(
+    name = "ast1040a0_evb",
+    qemu = ":dist",
+    kernel = "//ast1040/ast1040a0/evb:cm4",
+    machine = "ast1040-evb",
+    internal_flash_image = "//ast1040/ast1040a0/evb:image",
+    external_option = [
+        "-blockdev",
+        "node-name=fmc_cs0,driver=file,filename=__INTERNAL_FLASH_IMAGE__",
+        "-device",
+        "w25q33pw,bus=ssi.0,cs=0x0,drive=fmc_cs0",
+    ],
+)
+
+qemu_run(
+    name = "ast1080a0_evb",
+    qemu = ":dist",
+    kernel = "//ast1080/ast1080a0/evb:cm4",
+    machine = "ast1040-evb",
+    internal_flash_image = "//ast1080/ast1080a0/evb:image",
+    external_option = [
+        "-blockdev",
+        "node-name=fmc_cs0,driver=file,filename=__INTERNAL_FLASH_IMAGE__",
+        "-device",
+        "w25q33pw,bus=ssi.0,cs=0x0,drive=fmc_cs0",
+    ],
+)
+
+qemu_run(
+    name = "ast1080a0_dcscm",
+    qemu = ":dist",
+    kernel = "//ast1080/ast1080a0/dcscm:cm4",
+    machine = "ast1040-evb",
+    internal_flash_image = "//ast1080/ast1080a0/dcscm:image",
+    external_option = [
+        "-blockdev",
+        "node-name=fmc_cs0,driver=file,filename=__INTERNAL_FLASH_IMAGE__",
+        "-device",
+        "w25q33pw,bus=ssi.0,cs=0x0,drive=fmc_cs0",
+    ],
 )

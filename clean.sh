@@ -21,6 +21,7 @@ case "${1:-expunge}" in
         rm -rf "$BASE/cptra_imgtool/target"
         rm -rf "$BASE/cptra_imgtool/out"
         rm -rf "$BASE/.stage"
+        rm -rf "$BASE/qemu-image"
         echo "Done."
         ;;
     env)
@@ -34,6 +35,7 @@ case "${1:-expunge}" in
 
         # Staging dir
         rm -rf "$BASE/.stage"
+        rm -rf "$BASE/qemu-image"
 
         # Downloaded / installed by setup.sh
         rm -rf "$BASE/.venv"
@@ -67,6 +69,7 @@ case "${1:-expunge}" in
 
         # Staging dir
         rm -rf "$BASE/.stage"
+        rm -rf "$BASE/qemu-image"
 
         # Downloaded / installed by setup.sh
         rm -rf "$BASE/.venv"

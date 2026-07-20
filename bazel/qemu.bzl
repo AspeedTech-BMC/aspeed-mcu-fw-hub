@@ -5,6 +5,7 @@
 # native Bazel build. All qemu_build/qemu_run targets are tagged "manual".
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 def _qemu_build_impl(ctx):
     dist_dir = ctx.actions.declare_directory(ctx.label.name)
@@ -68,6 +69,32 @@ def qemu_build(name, target_list = "arm-softmmu", configure_opts = "", **kwargs)
         name = name,
         target_list = target_list,
         configure_opts = configure_opts,
+        tags = tags + ["manual"],
+        **kwargs
+    )
+
+def qemu_run(
+        name,
+        qemu,
+        kernel,
+        machine,
+        internal_flash_image,
+        external_option,
+        qemu_binary = "qemu-system-arm",
+        **kwargs):
+    tags = kwargs.pop("tags", [])
+    sh_binary(
+        name = name,
+        srcs = ["//qemu:run_qemu.sh"],
+        args = [
+            "qemu_bin=$(location {})/bin/{}".format(qemu, qemu_binary),
+            "kernel=$(location {})".format(kernel),
+            "machine={}".format(machine),
+            "internal_flash_image=$(location {})".format(internal_flash_image),
+            "run_name={}".format(name),
+            "external_option=",
+        ] + external_option,
+        data = [qemu, kernel, internal_flash_image],
         tags = tags + ["manual"],
         **kwargs
     )

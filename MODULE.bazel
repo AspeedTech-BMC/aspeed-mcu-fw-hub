@@ -1,6 +1,7 @@
 module(name = "aspeed_build")
 
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_shell", version = "0.6.1")
 
 _local_repo = use_repo_rule(
     "@bazel_tools//tools/build_defs/repo:local.bzl",

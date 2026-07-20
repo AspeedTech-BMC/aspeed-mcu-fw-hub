@@ -70,7 +70,7 @@ _zephyr_west_build_rule = rule(
 )
 
 
-def zephyr_west_build(name, board, app, output_bin, role = "cm4"):
+def zephyr_west_build(name, board, app, output_bin, role = "cm4", visibility = None):
     _zephyr_west_build_rule(
         name = name,
         board = board,
@@ -78,4 +78,5 @@ def zephyr_west_build(name, board, app, output_bin, role = "cm4"):
         role = role,
         srcs = ["@zephyr_ws//:all"],
         output_bin = output_bin,
+        visibility = visibility,
     )

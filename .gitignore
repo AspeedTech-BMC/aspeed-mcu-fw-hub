@@ -13,6 +13,7 @@ bazel-*
 # Build outputs
 build/
 .stage/
+qemu-image/
 
 # External repos (fetched by setup.sh)
 caliptra-mcu-sw/
