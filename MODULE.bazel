@@ -82,7 +82,9 @@ _git_repo = use_repo_rule(
 # QEMU_PATCHES as they are added under qemu/patches/.
 QEMU_REMOTE = "https://github.com/qemu/qemu.git"
 QEMU_COMMIT = "5ef0ecc5942ee07bb581cc96a97bbfc0fdf4005c"
-QEMU_PATCHES = []
+QEMU_PATCHES = [
+    "//qemu:patches/v1-0001-hw-arm-aspeed_ast1040-Support-FMC.patch",
+]
 
 _git_repo(
     name = "qemu_src",
