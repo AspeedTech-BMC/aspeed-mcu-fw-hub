@@ -21,7 +21,8 @@ aspeed-mcu-fw-hub/
 │   ├── caliptra.bzl     # Macro: caliptra_targets
 │   ├── bmc_pb.bzl       # Macro: bmc_pb_target
 │   ├── manifest.bzl     # Macro: manifest_targets
-│   └── image.bzl        # Macro: image_targets
+│   ├── image.bzl        # Macro: image_targets
+│   └── qemu.bzl         # Rule/macro: qemu_build, qemu_run
 ├── ast1040/
 │   └── ast1040a0/
 │       ├── BUILD.bazel
@@ -34,12 +35,17 @@ aspeed-mcu-fw-hub/
 │       │   └── BUILD.bazel
 │       └── dcscm/
 │           └── BUILD.bazel
+├── qemu/
+│   ├── BUILD.bazel
+│   ├── run_qemu.sh      # Run-target launch script
+│   └── patches/         # QEMU machine-model patches
 ├── caliptra-mcu-sw/     # Cloned by setup.sh
 ├── cptra_imgtool/       # Cloned by setup.sh
 ├── bmc-pb/              # Cloned by setup.sh
 ├── zephyr-workspace/    # west init + west update
 ├── zephyr-sdk-*/        # Zephyr SDK (downloaded by setup.sh)
 ├── tools/bazel          # Bazelisk (downloaded by setup.sh)
+├── qemu-image/          # QEMU writable flash copies (auto-created, gitignored)
 ├── .venv/               # Python venv (west)
 ├── .cargo/              # Rust/Cargo
 ├── .rustup/             # Rustup
@@ -187,6 +193,39 @@ Example:
 cd caliptra-mcu-sw
 cargo xtask runtime-build --platform ast1040
 ```
+
+## QEMU
+
+Building QEMU requires host build dependencies (ninja, meson, pkg-config,
+glib, pixman, etc.) that are not installed by `setup.sh` — see QEMU's own
+host setup docs for your OS, e.g. https://wiki.qemu.org/Hosts/Linux
+
+Build QEMU (fetched via Bazel, pinned to a commit in `MODULE.bazel`):
+
+```bash
+bazel build //qemu:dist
+```
+
+Run a board:
+
+```bash
+bazel run //qemu:ast1040a0_evb
+bazel run //qemu:ast1080a0_evb
+bazel run //qemu:ast1080a0_dcscm
+```
+
+Pass extra QEMU flags with `--`, e.g.:
+
+```bash
+bazel run //qemu:ast1040a0_evb -- -d guest_errors
+```
+
+Each run copies the board's flash image to a writable file under
+`qemu-image/` (gitignored) so guest firmware can actually write/erase it;
+the copy persists across reruns - delete it to reset back to the freshly
+built image.
+
+Switching QEMU versions or adding/updating patches: see `qemu/README.md`.
 
 ## Source Repo Configuration
 
