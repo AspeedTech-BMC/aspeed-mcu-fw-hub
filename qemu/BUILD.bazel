@@ -1,0 +1,14 @@
+# Copyright (c) 2026 ASPEED Technology Inc.
+# SPDX-License-Identifier: MIT
+
+load("//bazel:qemu.bzl", "qemu_build")
+
+# bazel build //qemu:dist — fetches @qemu_src (pinned commit, see
+# MODULE.bazel) and builds it locally. Tagged "manual" so it's isolated from
+# the ast1040/ast1080 platform build graph and never swept into a wildcard
+# build/run.
+qemu_build(
+    name = "dist",
+    target_list = "arm-softmmu",
+    configure_opts = "",
+)

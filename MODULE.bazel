@@ -70,3 +70,33 @@ filegroup(
 )
 """,
 )
+
+_git_repo = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+# QEMU: fetched (not manually cloned) and pinned to a fixed commit, so
+# "bazel build //qemu:dist" alone is enough to get the source. Bump
+# QEMU_COMMIT to move to a different upstream revision; add patch labels to
+# QEMU_PATCHES as they are added under qemu/patches/.
+QEMU_REMOTE = "https://github.com/qemu/qemu.git"
+QEMU_COMMIT = "5ef0ecc5942ee07bb581cc96a97bbfc0fdf4005c"
+QEMU_PATCHES = []
+
+_git_repo(
+    name = "qemu_src",
+    remote = QEMU_REMOTE,
+    commit = QEMU_COMMIT,
+    patches = QEMU_PATCHES,
+    patch_args = ["-p1"],
+    build_file_content = """
+exports_files(["configure"])
+
+filegroup(
+    name = "all",
+    srcs = glob(["**"], exclude = ["**/.git/**", "_bazel_build/**"]),
+    visibility = ["//visibility:public"],
+)
+""",
+)
