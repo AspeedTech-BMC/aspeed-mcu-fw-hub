@@ -5,7 +5,14 @@
 # All install work runs in a subshell so set -e cannot exit the parent terminal.
 # Only the PATH/env exports at the end affect the current shell when sourced.
 
-BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# zsh doesn't populate BASH_SOURCE when sourced, so BASE would silently
+# resolve to the caller's cwd instead of this script's actual location.
+if [ -n "${ZSH_VERSION:-}" ]; then
+    _SETUP_SCRIPT="${(%):-%N}"
+else
+    _SETUP_SCRIPT="${BASH_SOURCE[0]}"
+fi
+BASE="$(cd "$(dirname "$_SETUP_SCRIPT")" && pwd)"
 
 VENV="$BASE/.venv/zephyr"
 CARGO_HOME="$BASE/.cargo"
