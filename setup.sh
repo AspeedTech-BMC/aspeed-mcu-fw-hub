@@ -111,15 +111,76 @@ fi
 echo "=== [5/6] Clone source repos ==="
 _clone_repo() {
     local name=$1 remote=$2 branch=$3 commit=$4
-    if [ ! -d "$BASE/$name/.git" ]; then
-        echo "  cloning $name @ ${commit:-$branch} ..."
-        git clone "$remote" --branch "$branch" "$BASE/$name" || return 1
-        if [ -n "$commit" ]; then
-            git -C "$BASE/$name" checkout "$commit" || return 1
-        fi
-    else
-        echo "  $name already cloned, skipping"
+    local dir="$BASE/$name"
+
+    if [ -z "$branch" ]; then
+        echo "ERROR: $name: BRANCH is required" >&2
+        return 1
     fi
+
+    if [ -d "$dir/.git" ]; then
+        if [ -n "$commit" ]; then
+            local head
+            head=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+            if [ "$head" != "$commit" ]; then
+                echo "ERROR: $name: already cloned at $head, but repos_*.sh now pins $commit." >&2
+                echo "  Fix manually: git -C $dir fetch origin $commit && git -C $dir checkout $commit" >&2
+                return 1
+            fi
+        fi
+        echo "  $name already cloned, skipping"
+        return 0
+    fi
+
+    # Clone into a scratch dir and move it into place only once every step
+    # below succeeds — if any step fails, $dir must NOT end up containing a
+    # half-initialized .git, or the check above would mistake it for a
+    # successful clone and silently skip it forever.
+    local tmp="$dir.tmp-$$"
+    rm -rf "$tmp"
+    case "$branch" in
+        refs/*)
+            # A ref (e.g. an unmerged Gerrit patch set like
+            # "refs/changes/xx/yyyy/z") isn't clonable with `--branch`, and
+            # isn't reachable without knowing which commit it points to —
+            # COMMIT is required so the fetch can be verified.
+            if [ -z "$commit" ]; then
+                echo "ERROR: $name: BRANCH=$branch is a ref, which requires COMMIT to verify what was fetched" >&2
+                return 1
+            fi
+            echo "  cloning $name @ $branch ($commit) ..."
+            git init -q "$tmp" \
+                && git -C "$tmp" remote add origin "$remote" \
+                && git -C "$tmp" fetch --no-tags origin "$branch" \
+                || { rm -rf "$tmp"; return 1; }
+            local fetched
+            fetched=$(git -C "$tmp" rev-parse FETCH_HEAD)
+            if [ "$fetched" != "$commit" ]; then
+                echo "ERROR: $name: $branch resolved to $fetched, expected $commit" >&2
+                rm -rf "$tmp"
+                return 1
+            fi
+            git -C "$tmp" checkout --detach "$commit" || { rm -rf "$tmp"; return 1; }
+            ;;
+        *)
+            echo "  cloning $name @ ${commit:-$branch} ..."
+            git clone "$remote" --branch "$branch" "$tmp" || { rm -rf "$tmp"; return 1; }
+            if [ -n "$commit" ]; then
+                # $commit may not be reachable from $branch (single-branch
+                # clone only fetched that branch's history). Fall back to
+                # fetching the commit by SHA directly before giving up.
+                if ! git -C "$tmp" checkout "$commit" 2>/dev/null; then
+                    git -C "$tmp" fetch origin "$commit" && git -C "$tmp" checkout "$commit" \
+                        || { rm -rf "$tmp"; return 1; }
+                fi
+            fi
+            ;;
+    esac
+    mv "$tmp" "$dir" || {
+        rm -rf "$tmp"
+        echo "ERROR: $name: failed to move $tmp to $dir (does $dir already exist?)" >&2
+        return 1
+    }
 }
 for name in "${REPOS[@]}"; do
     var=$(echo "$name" | tr '[:lower:]-' '[:upper:]_')
@@ -143,11 +204,16 @@ source "$VENV/bin/activate"
 mkdir -p "$WEST_WS"
 if [ ! -d "$WEST_WS/.west" ]; then
     cd "$WEST_WS"
-    WEST_INIT_ARGS="-m $ASPEED_ZEPHYR_PROJECT_REMOTE"
+    # Use an array, not a scalar string, so this is safe regardless of
+    # whether this script is sourced into bash or zsh: bash word-splits an
+    # unquoted "$WEST_INIT_ARGS" string on spaces, but zsh does not, which
+    # would otherwise pass the whole "-m URL --mr REV" blob to `west init`
+    # as a single malformed argument.
+    WEST_INIT_ARGS=(-m "$ASPEED_ZEPHYR_PROJECT_REMOTE")
     if [ -n "$ASPEED_ZEPHYR_PROJECT_BRANCH" ]; then
-        WEST_INIT_ARGS="$WEST_INIT_ARGS --mr $ASPEED_ZEPHYR_PROJECT_BRANCH"
+        WEST_INIT_ARGS+=(--mr "$ASPEED_ZEPHYR_PROJECT_BRANCH")
     fi
-    west init $WEST_INIT_ARGS || exit 1
+    west init "${WEST_INIT_ARGS[@]}" || exit 1
     if [ -n "$ASPEED_ZEPHYR_PROJECT_COMMIT" ]; then
         git -C aspeed-zephyr-project checkout "$ASPEED_ZEPHYR_PROJECT_COMMIT"
     fi
