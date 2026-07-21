@@ -106,6 +106,12 @@ bazel query //...
 bazel build //ast1040/ast1040a0/evb:image
 ```
 
+#### Streaming Boot over I3C images
+
+```bash
+bazel build //ast1040/ast1040a0/evb:image-streamingboot-i3c
+```
+
 ### AST1080 EVB
 
 ```bash
@@ -128,6 +134,7 @@ bazel build //ast1080/ast1080a0/dcscm:image
 | `bazel build //ast1040/ast1040a0:bmc-pb`         | Copy bmc-pb prebuilt binaries  |
 | `bazel build //ast1040/ast1040a0/evb:manifest`   | Create auth flash manifest     |
 | `bazel build //ast1040/ast1040a0/evb:image`      | Assemble final flash image     |
+| `bazel build //ast1040/ast1040a0/evb:image-streamingboot-i3c` | Stage OCP Recovery-over-I3C images + PLDM streaming-boot package |
 
 ### Ad-hoc board/app override
 
@@ -140,6 +147,35 @@ bazel build //ast1040/ast1040a0/evb:image \
   --//flags:bootmcu_zephyr_board=ast1040_evb/ast1040/bootmcu \
   --//flags:bootmcu_zephyr_app=aspeed-zephyr-project/apps/mcu-runtime
 ```
+
+## Recovery-over-I3C Staging (AST1040)
+
+```bash
+bazel build //ast1040/ast1040a0/evb:image-streamingboot-i3c
+```
+
+Output: `bazel-bin/ast1040/ast1040a0/evb/streamingboot-i3c/`, containing the
+256-byte-aligned `caliptra-fw`/`ssmcu-runtime`/auth-manifest images, the
+`mctp-i3c-recovery_2755` tool, the `streamingboot_from_i3c.sh` runner, and
+the `ast1040-cm4-test.pldm` streaming-boot package.
+
+Copy the whole `streamingboot-i3c/` directory to the CA35 EVB (for example,
+`/tmp/streamingboot-i3c`) and run `./streamingboot_from_i3c.sh` there over
+the raw I3C recovery device to stream `caliptra-fw`/auth-manifest/`ssmcu-runtime`.
+
+The `.pldm` package is a separate delivery path — it is not sent by
+`streamingboot_from_i3c.sh` (which only streams the three `.bin` images over
+raw I3C). It is the PLDM-over-MCTP firmware package for the CM4 image
+update flow, delivered by whatever PLDM/MCTP update client the BMC or host
+side uses.
+
+This target builds its own `ssmcu-runtime-streamingboot-i3c` binary (with
+the `test-pldm-streaming-boot` Cargo feature) and its own auth-manifest
+(`:manifest-streamingboot-i3c`), fully separate from `//ast1040/ast1040a0:ssmcu-runtime`
+and `:manifest` used by `:image`. Boot ROM authenticates the streamed
+ssmcu-runtime against the auth-manifest's stored measurement, so the two
+must come from the same build — this keeps the normal `:image` output free
+of the test feature while recovery still authenticates correctly.
 
 ## Flash Image Layout
 

@@ -17,3 +17,17 @@ caliptra_targets(
     ssmcu_runtime_bin = "{}/runtime-ast1040.bin".format(_RISCV),
     ssmcu_runtime_out = "ssmcu-runtime.bin",
 )
+
+caliptra_targets(
+    platform = "ast1040",
+    name = "ssmcu-runtime-streamingboot-i3c",
+    ssmcu_runtime_bin = "{}/runtime-ast1040.bin".format(_RISCV),
+    ssmcu_runtime_out = "ssmcu-runtime-streamingboot-i3c.bin",
+    features = "test-pldm-streaming-boot",
+    serialize_after = ":ssmcu-runtime",
+)
+
+exports_files(
+    ["ast1040a0-pldm-package.toml.tmpl"],
+    visibility = ["//visibility:public"],
+)

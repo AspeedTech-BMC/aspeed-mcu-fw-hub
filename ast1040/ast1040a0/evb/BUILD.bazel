@@ -4,6 +4,7 @@
 load("//bazel:zephyr.bzl", "zephyr_west_build")
 load("//bazel:manifest.bzl", "manifest_targets")
 load("//bazel:image.bzl", "image_targets")
+load("//bazel:streamingboot.bzl", "streamingboot_i3c_targets")
 
 zephyr_west_build(
     name = "cm4",
@@ -32,6 +33,20 @@ manifest_targets(
     bmc_pb_target = "//ast1040/ast1040a0:bmc-pb",
 )
 
+manifest_targets(
+    platform = "ast1040",
+    chip = "ast1040a0",
+    name = "manifest-streamingboot-i3c",
+    out_namespace = "ast1040a0-streamingboot-i3c",
+    flash_image_out = "aspeed-manifest-flash-image-streamingboot-i3c.bin",
+    cm4_target = ":cm4",
+    bootmcu_target = ":bootmcu",
+    manifest_cfg = "config/ast1040a0-default-ecc-lms-mldsa-manifest.toml",
+    ssmcu_runtime_target = "//ast1040/ast1040a0:ssmcu-runtime-streamingboot-i3c",
+    bmc_pb_target = "//ast1040/ast1040a0:bmc-pb",
+    serialize_after = ":manifest",
+)
+
 image_targets(
     platform = "ast1040",
     chip = "ast1040a0",
@@ -43,4 +58,16 @@ image_targets(
     manifest_image = ":aspeed-manifest-flash-image.bin",
     manifest_image_seek_kb = 1024,
     visibility = ["//qemu:__pkg__"],
+)
+
+streamingboot_i3c_targets(
+    chip = "ast1040a0",
+    caliptra_fw_target = "//ast1040/ast1040a0:caliptra-fw.bin",
+    ssmcu_runtime_target = "//ast1040/ast1040a0:ssmcu-runtime-streamingboot-i3c",
+    auth_manifest_target = ":recovery/ast1040a0-streamingboot-i3c/ast1040a0-streamingboot-i3c-auth-manifest.bin",
+    gen_script = "//scripts:gen_streamingboot_i3c_images.py",
+    mctp_tool = "//scripts:mctp-i3c-recovery_2755",
+    pldm_manifest_template = "//ast1040/ast1040a0:ast1040a0-pldm-package.toml.tmpl",
+    pldm_output_name = "ast1040-cm4-test.pldm",
+    flash_image_target = ":aspeed-manifest-flash-image-streamingboot-i3c.bin",
 )

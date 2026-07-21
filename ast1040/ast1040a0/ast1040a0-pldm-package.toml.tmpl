@@ -1,0 +1,45 @@
+# Test PLDM firmware package for AST1040 CM4 image loading.
+#
+# The UUID matches platforms/ast1040/runtime/userspace/apps/user/src/
+# image_loader/config.rs. Package component index 0 maps to image ID 0x100E
+# in the AST1040 authenticated-flash manifest; its PLDM identifier is 0xffff.
+# The payload is the complete authenticated-flash bundle: the PLDM loader
+# downloads its FlashHeader and TOC before requesting only the CM4 section.
+#
+# image_location below is a placeholder substituted at build time with the
+# absolute path of the Bazel-built aspeed-manifest-flash-image.bin, since the
+# tool resolves it relative to its own CWD and that CWD is not stable across
+# Bazel invocations.
+
+[package_header_information]
+package_header_identifier = "7B291C996DB64208801B02026E463C78"
+package_header_format_revision = 1
+package_release_date_time = "2026-07-14T00:00:00Z"
+package_version_string = "ast1040-abb-pldm-test-1.1"
+package_version_string_type = "ASCII"
+
+[[firmware_device_id_records]]
+device_update_option_flags = 1
+component_image_set_version_string_type = "ASCII"
+applicable_components = [0]
+component_image_set_version_string = "ast1040-cm4-test-1.1"
+firmware_device_package_data = []
+reference_manifest_data = []
+
+[firmware_device_id_records.initial_descriptor]
+descriptor_type = "UUID"
+descriptor_data = [
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+]
+
+[[component_image_information]]
+image_location = "@@IMAGE_LOCATION@@"
+classification = 0x000A
+identifier = 0xFFFF
+comparison_stamp = 2
+options = 0
+requested_activation_method = 0
+version_string_type = "ASCII"
+version_string = "ast1040-cm4-test-1.1"
+opaque_data = []

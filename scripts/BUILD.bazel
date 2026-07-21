@@ -1,0 +1,10 @@
+# Copyright (c) 2026 ASPEED Technology Inc.
+# SPDX-License-Identifier: MIT
+
+exports_files(
+    [
+        "gen_streamingboot_i3c_images.py",
+        "mctp-i3c-recovery_2755",
+    ],
+    visibility = ["//visibility:public"],
+)
