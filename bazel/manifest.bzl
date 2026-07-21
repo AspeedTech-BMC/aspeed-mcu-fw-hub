@@ -4,10 +4,17 @@
 _TOOL = "target/tools/cptra_2x"
 
 def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_target,
-                     manifest_cfg, bootmcu_target = None):
+                     manifest_cfg, bootmcu_target = None,
+                     name = "manifest",
+                     out_namespace = None,
+                     flash_image_out = "aspeed-manifest-flash-image.bin",
+                     serialize_after = None):
     _IMAGE_PREFIX = "{}-default".format(chip)
     _MANIFEST_CFG = manifest_cfg
-    _REC = "recovery/{}".format(_IMAGE_PREFIX)
+    # Distinct out_namespace/flash_image_out needed if calling this twice
+    # for the same chip — two genrules can't share an output path.
+    _OUT_NS = out_namespace or _IMAGE_PREFIX
+    _REC = "recovery/{}".format(_OUT_NS)
 
     _srcs = [
         cm4_target,
@@ -18,10 +25,17 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     ]
     if bootmcu_target != None:
         _srcs.append(bootmcu_target)
+    if serialize_after != None:
+        # Both builds run `rm -rf out/` in the same shared cptra_imgtool
+        # checkout; force this one to run after serialize_after to avoid
+        # the two racing and corrupting each other's output.
+        _srcs.append(serialize_after)
 
     _install_input_lines = [
         "install -m 644 $(location {}) $$STAGE/".format(cm4_target),
-        "install -m 644 $(location {}) $$STAGE/".format(ssmcu_runtime_target),
+        # Fixed name: the manifest toml expects "ssmcu-runtime.bin" in
+        # prebuilt-dir regardless of this target's own output filename.
+        "install -m 644 $(location {}) $$STAGE/ssmcu-runtime.bin".format(ssmcu_runtime_target),
         "install -m 644 $(locations {}) $$STAGE/".format(bmc_pb_target),
     ]
     if bootmcu_target != None:
@@ -32,8 +46,8 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     _setup_lines = [
         "set -e",
         "EXECROOT=$$(pwd)",
-        "BAZEL_OUT=$$EXECROOT/$$(dirname $(location aspeed-manifest-flash-image.bin))",
-        "STAGE=$$MY_BAZEL_BASE/.stage/{}/manifest".format(platform),
+        "BAZEL_OUT=$$EXECROOT/$$(dirname $(location {}))".format(flash_image_out),
+        "STAGE=$$MY_BAZEL_BASE/.stage/{}/{}".format(platform, name),
         "rm -rf $$STAGE",
         "mkdir -p $$STAGE",
         "source $$CARGO_HOME/env",
@@ -63,9 +77,9 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     ]
 
     _install_lines = [
-        "install -D -m 644 $$IMGTOOL/out/$$IMAGE_PREFIX-flash-image.bin $$BAZEL_OUT/aspeed-manifest-flash-image.bin",
+        "install -D -m 644 $$IMGTOOL/out/$$IMAGE_PREFIX-flash-image.bin $$BAZEL_OUT/{}".format(flash_image_out),
         ("install -D -m 644 $$IMGTOOL/out/$$IMAGE_PREFIX-auth-manifest.bin"
-         + " $$BAZEL_OUT/{}/$$IMAGE_PREFIX-auth-manifest.bin".format(_REC)),
+         + " $$BAZEL_OUT/{}/{}-auth-manifest.bin".format(_REC, _OUT_NS)),
         "install -D -m 644 $$IMGTOOL/out/fw_toc.bin $$BAZEL_OUT/{}/fw_toc.bin".format(_REC),
         "cp $$IMGTOOL/out/padding_output/* $$BAZEL_OUT/{}/".format(_REC),
     ]
@@ -79,8 +93,8 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     )
 
     _outs = [
-        "aspeed-manifest-flash-image.bin",
-        "{}/{}-auth-manifest.bin".format(_REC, _IMAGE_PREFIX),
+        flash_image_out,
+        "{}/{}-auth-manifest.bin".format(_REC, _OUT_NS),
         "{}/fw_toc.bin".format(_REC),
         "{}/caliptra-fw_align_256.bin".format(_REC),
         "{}/ssmcu-runtime_align_256.bin".format(_REC),
@@ -90,7 +104,7 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         _outs.append("{}/zephyr-mcu-runtime_align_256.bin".format(_REC))
 
     native.genrule(
-        name = "manifest",
+        name = name,
         srcs = _srcs,
         outs = _outs,
         cmd = cmd,
