@@ -84,7 +84,9 @@ _git_repo = use_repo_rule(
 QEMU_REMOTE = "https://github.com/qemu/qemu.git"
 QEMU_COMMIT = "5ef0ecc5942ee07bb581cc96a97bbfc0fdf4005c"
 QEMU_PATCHES = [
-    "//qemu:patches/0001-hw-arm-aspeed_ast1040-Support-FMC-and-SPI.patch",
+    "//qemu:patches/0001-hw-arm-aspeed_ast1040-Support-FMC-stub-SPI-ast1080.patch",
+    "//qemu:patches/v1-0002-hw-arm-aspeed_ast1040-Add-unimplemented-swmbx-stub.patch",
+    "//qemu:patches/v1-0003-hw-arm-aspeed_ast1040-Add-unimplemented-i3c-stub.patch",
 ]
 
 _git_repo(

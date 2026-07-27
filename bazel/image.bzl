@@ -11,8 +11,13 @@ def image_targets(
         ssmcu_rom_seek_kb = 0,
         bootmcu_rom_bin = None,
         bootmcu_rom_seek_kb = 512,
-        visibility = None):
+        visibility = None,
+        name = "image",
+        output_bin = None):
     _C = chip + "-default"
+    # Distinct name/output_bin needed if calling this twice for the same
+    # chip — two genrules can't share a name or output path.
+    _OUTPUT_BIN = output_bin or (platform + ".bin")
 
     _srcs = [manifest_image]
     if ssmcu_rom_bin != None:
@@ -23,7 +28,7 @@ def image_targets(
     cmd_lines = [
         "set -e",
         "OUTDIR=$$(realpath $(@D))",
-        "IMAGE=$$OUTDIR/{}.bin".format(platform),
+        "IMAGE=$$OUTDIR/{}".format(_OUTPUT_BIN),
         "IMAGE_SIZE_KB={}".format(image_size_kb),
         "MANIFEST_IMAGE=$$(realpath $(location {}))".format(manifest_image),
         "dd if=/dev/zero bs=1K count=$$IMAGE_SIZE_KB | tr '\\000' '\\377' > $$IMAGE",
@@ -50,9 +55,9 @@ def image_targets(
     cmd = "\n".join(cmd_lines)
 
     native.genrule(
-        name = "image",
+        name = name,
         srcs = _srcs,
-        outs = [platform + ".bin"],
+        outs = [_OUTPUT_BIN],
         cmd = cmd,
         local = True,
         visibility = visibility,

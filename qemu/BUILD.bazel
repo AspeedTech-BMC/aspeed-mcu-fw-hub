@@ -15,7 +15,7 @@ qemu_build(
 
 exports_files(["run_qemu.sh"])
 
-# bazel run //qemu:ast1040a0_evb / :ast1080a0_evb / :ast1080a0_dcscm
+# bazel run //qemu:ast1040a0_evb / :ast1080a0_evb / :ast1080a0_dcscm_bhs / :ast1080a0_dcscm_oks
 # All three run on "ast1040-evb" (needs the machine model patch under
 # qemu/patches/ — AST1080 has no machine model of its own, it's
 # register-compatible with AST1040). Each boots two ways at once: -kernel
@@ -51,11 +51,25 @@ qemu_run(
 )
 
 qemu_run(
-    name = "ast1080a0_dcscm",
+    name = "ast1080a0_dcscm_bhs",
     qemu = ":dist",
-    kernel = "//ast1080/ast1080a0/dcscm:cm4",
+    kernel = "//ast1080/ast1080a0/dcscm:cm4_bhs",
     machine = "ast1040-evb",
-    internal_flash_image = "//ast1080/ast1080a0/dcscm:image",
+    internal_flash_image = "//ast1080/ast1080a0/dcscm:image_bhs",
+    external_option = [
+        "-blockdev",
+        "node-name=fmc_cs0,driver=file,filename=__INTERNAL_FLASH_IMAGE__",
+        "-device",
+        "w25q33pw,bus=ssi.0,cs=0x0,drive=fmc_cs0",
+    ],
+)
+
+qemu_run(
+    name = "ast1080a0_dcscm_oks",
+    qemu = ":dist",
+    kernel = "//ast1080/ast1080a0/dcscm:cm4_oks",
+    machine = "ast1040-evb",
+    internal_flash_image = "//ast1080/ast1080a0/dcscm:image_oks",
     external_option = [
         "-blockdev",
         "node-name=fmc_cs0,driver=file,filename=__INTERNAL_FLASH_IMAGE__",

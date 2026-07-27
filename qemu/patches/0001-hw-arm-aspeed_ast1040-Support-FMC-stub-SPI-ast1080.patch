@@ -1,25 +1,39 @@
-From b3b6da29eba9d42467552a2e1fa3f48e2c3d6228 Mon Sep 17 00:00:00 2001
-From: Jamin Lin <jamin_lin@aspeedtech.com>
-Date: Wed, 17 Jun 2026 09:37:09 +0800
-Subject: [PATCH] hw/arm/aspeed_ast1040: Support FMC and SPI
+From: Steven Lee <steven_lee@aspeedtech.com>
+Subject: [PATCH v1] hw/arm/aspeed_ast1040: Support FMC, stub SPI0/SPI1
+ for ast1080 cs-group-analog-mux
 
-Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
-Change-Id: I0ebc0d52a6b89df872664db69845db7a45286359
+Add a real aspeed.smc model for FMC (the actual boot flash) and its
+w25q33pw flash chip. SPI0/SPI1 stay as unimplemented_device stubs
+instead of getting the same real-model treatment: cs-group-analog-mux-
+enable is an AST1080-only devicetree property (AST1040 has no SPI
+filter/mux of its own) used by boards like ast1080_dcscm_bhs/oks to
+alias CS0/CS1 and CS2/CS3 onto the same spi0/spi1 pins via an analog
+mux, so the same flash window is legitimately programmed with what
+looks like overlapping segments for the two CS groups. A real
+aspeed.smc model doesn't know about the mux and treats this as an
+invalid/overlapping segment ("aspeed_smc_flash_overlap"), which wedges
+the boot before any console output ever appears - confirmed by
+bisecting against the unimplemented-device stubs, where the same
+firmware boots to the Zephyr banner and PFR state machine without
+issue.
+
+Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
 ---
  hw/block/m25p80_sfdp.h      |   1 +
  include/hw/ssi/aspeed_smc.h |   2 +-
- hw/arm/aspeed_ast1040.c     |  37 +++++++++++++
+ include/hw/arm/aspeed_soc.h |   4 ++
+ hw/arm/aspeed_ast1040.c     |  39 +++++++++++--
  hw/block/m25p80.c           |   2 +
- hw/block/m25p80_sfdp.c      |  36 +++++++++++++
+ hw/block/m25p80_sfdp.c      |  36 ++++++++++++
  hw/ssi/aspeed_smc.c         | 103 ++++++++++++++++++++++++++++++++++++
- 6 files changed, 180 insertions(+), 1 deletion(-)
+ 7 files changed, 183 insertions(+), 4 deletions(-)
 
 diff --git a/hw/block/m25p80_sfdp.h b/hw/block/m25p80_sfdp.h
-index c1e532de5a..d937621716 100644
+index 1111111..2222222 100644
 --- a/hw/block/m25p80_sfdp.h
 +++ b/hw/block/m25p80_sfdp.h
-@@ -25,6 +25,7 @@ uint8_t m25p80_sfdp_mx66l1g45g(uint32_t addr);
- 
+@@ -25,6 +25,7 @@
+
  uint8_t m25p80_sfdp_w25q256(uint32_t addr);
  uint8_t m25p80_sfdp_w25q512jv(uint32_t addr);
 +uint8_t m25p80_sfdp_w25q33pw(uint32_t addr);
@@ -27,49 +41,69 @@ index c1e532de5a..d937621716 100644
  uint8_t m25p80_sfdp_w25q01jvq(uint32_t addr);
  uint8_t m25p80_sfdp_w25q02jvm(uint32_t addr);
 diff --git a/include/hw/ssi/aspeed_smc.h b/include/hw/ssi/aspeed_smc.h
-index 76831422c6..4c4ea603c1 100644
+index 1111111..2222222 100644
 --- a/include/hw/ssi/aspeed_smc.h
 +++ b/include/hw/ssi/aspeed_smc.h
-@@ -47,7 +47,7 @@ struct AspeedSMCFlash {
+@@ -47,7 +47,7 @@
  #define TYPE_ASPEED_SMC "aspeed.smc"
  OBJECT_DECLARE_TYPE(AspeedSMCState, AspeedSMCClass, ASPEED_SMC)
- 
+
 -#define ASPEED_SMC_R_MAX        (0x100 / 4)
 +#define ASPEED_SMC_R_MAX        (0x300 / 4)
  #define ASPEED_SMC_CS_MAX       5
- 
+
  struct AspeedSMCState {
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 1111111..2222222 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -114,6 +114,10 @@
+     UnimplementedDeviceState dpmcu;
+     UnimplementedDeviceState espi;
+     UnimplementedDeviceState udc;
++    UnimplementedDeviceState spi0_ctrl;
++    UnimplementedDeviceState spi1_ctrl;
++    UnimplementedDeviceState spi0_mmap;
++    UnimplementedDeviceState spi1_mmap;
+     UnimplementedDeviceState jtag[ASPEED_JTAG_NUM];
+     AspeedAPB2OPBState fsi[2];
+     AspeedLTPIState ltpi_ctrl[ASPEED_IOEXP_NUM];
 diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
-index 57ffc0807a..426c4b6ba4 100644
+index 1111111..2222222 100644
 --- a/hw/arm/aspeed_ast1040.c
 +++ b/hw/arm/aspeed_ast1040.c
-@@ -94,7 +94,9 @@ static void aspeed_soc_ast1040_init(Object *obj)
-     Aspeed10x0SoCState *a = ASPEED10X0_SOC(obj);
+@@ -95,6 +95,7 @@ static void aspeed_soc_ast1040_init(Object *obj)
      AspeedSoCState *s = ASPEED_SOC(obj);
      AspeedSoCClass *sc = ASPEED_SOC_GET_CLASS(s);
-+    char typename[64];
      int i;
 +
      object_initialize_child(obj, "armv7m", &a->armv7m, TYPE_ARMV7M);
- 
+
      s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
-@@ -123,6 +125,12 @@ static void aspeed_soc_ast1040_init(Object *obj)
+@@ -123,10 +124,19 @@ static void aspeed_soc_ast1040_init(Object *obj)
          object_initialize_child(obj, "wdt[*]", &s->wdt[i],
                                  "aspeed.wdt-ast2700");
      }
 +    object_initialize_child(obj, "fmc", &s->fmc, "aspeed.fmc-ast1040");
-+
-+    for (i = 0; i < sc->spis_num; i++) {
-+        snprintf(typename, sizeof(typename), "aspeed.spi%d-ast1040", i);
-+        object_initialize_child(obj, "spi[*]", &s->spi[i], typename);
-+    }
- 
+
      object_initialize_child(obj, "pwm", &s->pwm, TYPE_UNIMPLEMENTED_DEVICE);
      object_initialize_child(obj, "espi", &s->espi, TYPE_UNIMPLEMENTED_DEVICE);
-@@ -267,6 +275,34 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+     object_initialize_child(obj, "udc", &s->udc, TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "spi0_ctrl", &s->spi0_ctrl,
++                            TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "spi1_ctrl", &s->spi1_ctrl,
++                            TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "spi0_mmap", &s->spi0_mmap,
++                            TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "spi1_mmap", &s->spi1_mmap,
++                            TYPE_UNIMPLEMENTED_DEVICE);
+     object_initialize_child(obj, "jtag[0]", &s->jtag[0],
+                             TYPE_UNIMPLEMENTED_DEVICE);
+     object_initialize_child(obj, "jtag[1]", &s->jtag[1],
+@@ -267,6 +277,41 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
          aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->wdt[i]), 0, wdt_offset);
      }
- 
+
 +    /* FMC, The number of CS is set at the board level */
 +    object_property_set_link(OBJECT(&s->fmc), "dram", OBJECT(&s->sram[1]),
 +            &error_abort);
@@ -83,25 +117,32 @@ index 57ffc0807a..426c4b6ba4 100644
 +    sysbus_connect_irq(SYS_BUS_DEVICE(&s->fmc), 0,
 +                       aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_FMC));
 +
-+    /* SPI */
-+    for (i = 0; i < sc->spis_num; i++) {
-+        object_property_set_link(OBJECT(&s->spi[i]), "dram",
-+                                 OBJECT(&s->sram[1]), &error_abort);
-+        if (!sysbus_realize(SYS_BUS_DEVICE(&s->spi[i]), errp)) {
-+            return;
-+        }
-+        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 0,
-+                        sc->memmap[ASPEED_DEV_SPI0 + i]);
-+        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 1,
-+                        ASPEED_SMC_GET_CLASS(&s->spi[i])->flash_window_base);
-+        sysbus_connect_irq(SYS_BUS_DEVICE(&s->spi[i]), 0,
-+                           aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_SPI0 + i));
-+    }
++    /* SPI0/SPI1 controller regs: cs-group-analog-mux-enable boards (e.g.
++     * ast1080_dcscm) alias CS0/CS1 and CS2/CS3 onto the same pins via an
++     * analog mux, so the same flash window is legitimately programmed with
++     * overlapping segments for different CS groups. The real aspeed.smc
++     * model doesn't understand that and treats it as an invalid/overlapping
++     * segment, wedging the boot before any console output. Stub these out
++     * as unimplemented_device until the model (or the mux modeling) catches
++     * up - FMC (above) is unaffected and stays on the real model.
++     */
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->spi0_ctrl),
++                                  "aspeed.spi0_ctrl",
++                                  sc->memmap[ASPEED_DEV_SPI0], 0x300);
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->spi1_ctrl),
++                                  "aspeed.spi1_ctrl",
++                                  sc->memmap[ASPEED_DEV_SPI1], 0x300);
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->spi0_mmap),
++                                  "aspeed.spi0_mmap",
++                                  0xA0000000, 0x10000000);
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->spi1_mmap),
++                                  "aspeed.spi1_mmap",
++                                  0xC0000000, 0x10000000);
 +
      /* Unimplemented peripherals */
      aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->pwm),
                                    "aspeed.pwm",
-@@ -309,6 +345,7 @@ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+@@ -309,6 +354,7 @@ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
      sc->uarts_num       = 13;
      sc->sgpio_num       = 2;
      sc->wdts_num        = 8;
@@ -110,10 +151,10 @@ index 57ffc0807a..426c4b6ba4 100644
      sc->irqmap          = aspeed_soc_ast1040_irqmap;
      sc->memmap          = aspeed_soc_ast1040_memmap;
 diff --git a/hw/block/m25p80.c b/hw/block/m25p80.c
-index 4a4cda6602..e863dca510 100644
+index 1111111..2222222 100644
 --- a/hw/block/m25p80.c
 +++ b/hw/block/m25p80.c
-@@ -354,6 +354,8 @@ static const FlashPartInfo known_devices[] = {
+@@ -354,6 +354,8 @@
      { INFO("w25x32",      0xef3016,      0,  64 << 10,  64, ER_4K) },
      { INFO("w25q32",      0xef4016,      0,  64 << 10,  64, ER_4K) },
      { INFO("w25q32dw",    0xef6016,      0,  64 << 10,  64, ER_4K) },
@@ -123,13 +164,13 @@ index 4a4cda6602..e863dca510 100644
      { INFO("w25q64",      0xef4017,      0,  64 << 10, 128, ER_4K) },
      { INFO("w25q80",      0xef5014,      0,  64 << 10,  16, ER_4K) },
 diff --git a/hw/block/m25p80_sfdp.c b/hw/block/m25p80_sfdp.c
-index 87878c2bf0..3bea988ffb 100644
+index 1111111..2222222 100644
 --- a/hw/block/m25p80_sfdp.c
 +++ b/hw/block/m25p80_sfdp.c
-@@ -404,6 +404,42 @@ static const uint8_t sfdp_w25q01jvq[] = {
+@@ -404,6 +404,42 @@
  };
  define_sfdp_read(w25q01jvq);
- 
+
 +static const uint8_t sfdp_w25q33pw[] = {
 +    0x53, 0x46, 0x44, 0x50, 0x0a, 0x01, 0x00, 0xff,
 +    0x00, 0x08, 0x01, 0x17, 0x80, 0x00, 0x00, 0xff,
@@ -170,13 +211,13 @@ index 87878c2bf0..3bea988ffb 100644
      0x53, 0x46, 0x44, 0x50, 0x05, 0x01, 0x00, 0xff,
      0x00, 0x05, 0x01, 0x10, 0x80, 0x00, 0x00, 0xff,
 diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
-index d87fbd798c..cac3d36878 100644
+index 1111111..2222222 100644
 --- a/hw/ssi/aspeed_smc.c
 +++ b/hw/ssi/aspeed_smc.c
-@@ -2076,6 +2076,94 @@ static void aspeed_2700_spi2_class_init(ObjectClass *klass, const void *data)
+@@ -1975,6 +1975,94 @@
      asc->reg_ops           = &aspeed_2700_smc_flash_ops;
  }
- 
+
 +static void aspeed_1040_fmc_class_init(ObjectClass *klass, const void *data)
 +{
 +    DeviceClass *dc = DEVICE_CLASS(klass);
@@ -268,11 +309,10 @@ index d87fbd798c..cac3d36878 100644
  static const TypeInfo aspeed_smc_types[] = {
      {
          .name           = TYPE_ASPEED_SMC_FLASH,
-@@ -2107,6 +2195,21 @@ static const TypeInfo aspeed_smc_types[] = {
-         .parent     = TYPE_ASPEED_SMC,
+@@ -2007,6 +2095,21 @@
          .class_init = aspeed_1030_spi2_class_init,
      },
-+    {
+     {
 +        .name       = "aspeed.fmc-ast1040",
 +        .parent     = TYPE_ASPEED_SMC,
 +        .class_init = aspeed_1040_fmc_class_init,
@@ -287,9 +327,7 @@ index d87fbd798c..cac3d36878 100644
 +        .parent     = TYPE_ASPEED_SMC,
 +        .class_init = aspeed_1040_spi1_class_init,
 +    },
-     {
++    {
          .name       = "aspeed.smc-ast2400",
          .parent     = TYPE_ASPEED_SMC,
--- 
-2.43.0
-
+         .class_init = aspeed_2400_smc_class_init,

@@ -1,0 +1,78 @@
+From: Steven Lee <steven_lee@aspeedtech.com>
+Subject: [PATCH v1] hw/arm/aspeed_ast1040: Add unimplemented swmbx, i2c_filter
+ and spim stubs
+
+The AST1040/AST1080 software mailbox (0x74c19000), the G2 I2C filter
+block (0x74c14000), and the G2 SPI monitor block (0x74c15000) live at
+real HW addresses that fall in gaps the ast1040-evb machine model
+leaves unbacked. Any guest access to them (e.g. Zephyr's swmbx driver
+using the fixed SWMBX_BUF_BASE, or the SPIM driver once
+CONFIG_SPI_MONITOR_ASPEED is enabled) hits QEMU's unassigned-memory
+handler and takes a bus fault instead of a normal MMIO access, hanging
+boot before the UART console even comes up.
+
+SPI0/SPI1 controller registers and their memory-mapped flash windows
+are stubbed by 0001-hw-arm-aspeed_ast1040-Support-FMC-stub-SPI-ast1080.patch,
+not here - this patch only adds the peripherals below.
+
+Back the rest with an unimplemented_device stub like the other
+not-yet-modeled peripherals (pwm, espi, udc, jtag) so accesses log via
+"-d unimp" and return 0 instead of faulting.
+
+Signed-off-by: Steven Lee <steven_lee@aspeedtech.com>
+---
+ include/hw/arm/aspeed_soc.h |  3 +++
+ hw/arm/aspeed_ast1040.c     | 19 +++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index a1b2c3d..f6a7b8c 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -118,6 +118,9 @@
+     UnimplementedDeviceState spi1_ctrl;
+     UnimplementedDeviceState spi0_mmap;
+     UnimplementedDeviceState spi1_mmap;
++    UnimplementedDeviceState swmbx;
++    UnimplementedDeviceState i2c_filter;
++    UnimplementedDeviceState spim;
+     UnimplementedDeviceState jtag[ASPEED_JTAG_NUM];
+     AspeedAPB2OPBState fsi[2];
+     AspeedLTPIState ltpi_ctrl[ASPEED_IOEXP_NUM];
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 7c8d9e0..c9d0e1f 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -137,6 +137,10 @@ static void aspeed_soc_ast1040_init(Object *obj)
+                             TYPE_UNIMPLEMENTED_DEVICE);
+     object_initialize_child(obj, "spi1_mmap", &s->spi1_mmap,
+                             TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "swmbx", &s->swmbx, TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "i2c_filter", &s->i2c_filter,
++                            TYPE_UNIMPLEMENTED_DEVICE);
++    object_initialize_child(obj, "spim", &s->spim, TYPE_UNIMPLEMENTED_DEVICE);
+     object_initialize_child(obj, "jtag[0]", &s->jtag[0],
+                             TYPE_UNIMPLEMENTED_DEVICE);
+     object_initialize_child(obj, "jtag[1]", &s->jtag[1],
+@@ -312,6 +316,21 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+                                   "aspeed.spi1_mmap",
+                                   0xC0000000, 0x10000000);
+
++    /* Software mailbox: real HW address, no QEMU model yet */
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->swmbx),
++                                  "aspeed.swmbx",
++                                  0x74c19000, 0x1000);
++
++    /* I2C filter (G2 block): real HW address, no QEMU model yet */
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->i2c_filter),
++                                  "aspeed.i2c_filter",
++                                  0x74c14000, 0x1000);
++
++    /* SPI monitor (spim0/1/2/3, G2 block): real HW address, no QEMU model yet */
++    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->spim),
++                                  "aspeed.spim",
++                                  0x74c15000, 0x3000);
++
+     /* Unimplemented peripherals */
+     aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->pwm),
+                                   "aspeed.pwm",

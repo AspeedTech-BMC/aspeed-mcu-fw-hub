@@ -121,7 +121,8 @@ bazel build //ast1080/ast1080a0/evb:image
 ### AST1080 DCSCM
 
 ```bash
-bazel build //ast1080/ast1080a0/dcscm:image
+bazel build //ast1080/ast1080a0/dcscm:image_bhs
+bazel build //ast1080/ast1080a0/dcscm:image_oks
 ```
 
 ### Individual targets
@@ -247,7 +248,8 @@ Run a board:
 ```bash
 bazel run //qemu:ast1040a0_evb
 bazel run //qemu:ast1080a0_evb
-bazel run //qemu:ast1080a0_dcscm
+bazel run //qemu:ast1080a0_dcscm_bhs
+bazel run //qemu:ast1080a0_dcscm_oks
 ```
 
 Pass extra QEMU flags with `--`, e.g.:

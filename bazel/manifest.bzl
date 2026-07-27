@@ -32,9 +32,10 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         _srcs.append(serialize_after)
 
     _install_input_lines = [
-        "install -m 644 $(location {}) $$STAGE/".format(cm4_target),
-        # Fixed name: the manifest toml expects "ssmcu-runtime.bin" in
-        # prebuilt-dir regardless of this target's own output filename.
+        # Fixed name: the manifest toml expects "zephyr-shell-module.bin" /
+        # "ssmcu-runtime.bin" in prebuilt-dir regardless of these targets'
+        # own output filenames.
+        "install -m 644 $(location {}) $$STAGE/zephyr-shell-module.bin".format(cm4_target),
         "install -m 644 $(location {}) $$STAGE/ssmcu-runtime.bin".format(ssmcu_runtime_target),
         "install -m 644 $(locations {}) $$STAGE/".format(bmc_pb_target),
     ]

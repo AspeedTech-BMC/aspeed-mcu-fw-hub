@@ -6,10 +6,19 @@ load("//bazel:manifest.bzl", "manifest_targets")
 load("//bazel:image.bzl", "image_targets")
 
 zephyr_west_build(
-    name = "cm4",
-    board = "ast1040_dcscm/ast1040",
+    name = "cm4_bhs",
+    board = "ast1080_dcscm_bhs",
     app = "aspeed-zephyr-project/apps/aspeed-pfr",
-    output_bin = "zephyr-shell-module.bin",
+    output_bin = "zephyr-aspeed-pfr-bhs.bin",
+    role = "cm4",
+    visibility = ["//qemu:__pkg__"],
+)
+
+zephyr_west_build(
+    name = "cm4_oks",
+    board = "ast1080_dcscm_oks",
+    app = "aspeed-zephyr-project/apps/aspeed-pfr",
+    output_bin = "zephyr-aspeed-pfr-oks.bin",
     role = "cm4",
     visibility = ["//qemu:__pkg__"],
 )
@@ -25,22 +34,56 @@ zephyr_west_build(
 manifest_targets(
     platform = "ast1080",
     chip = "ast1080a0",
-    cm4_target = ":cm4",
+    name = "manifest_bhs",
+    out_namespace = "ast1080a0-bhs",
+    flash_image_out = "aspeed-manifest-flash-image-bhs.bin",
+    cm4_target = ":cm4_bhs",
     bootmcu_target = ":bootmcu",
     manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
 )
 
+manifest_targets(
+    platform = "ast1080",
+    chip = "ast1080a0",
+    name = "manifest_oks",
+    out_namespace = "ast1080a0-oks",
+    flash_image_out = "aspeed-manifest-flash-image-oks.bin",
+    cm4_target = ":cm4_oks",
+    bootmcu_target = ":bootmcu",
+    manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
+    ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
+    bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
+    serialize_after = ":manifest_bhs",
+)
+
 image_targets(
     platform = "ast1080",
     chip = "ast1080a0",
+    name = "image_bhs",
+    output_bin = "ast1080-bhs.bin",
     image_size_kb = 4096,
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
     bootmcu_rom_bin = "//ast1080/ast1080a0:boomcu-rom-xip.bin",
     bootmcu_rom_seek_kb = 512,
-    manifest_image = ":aspeed-manifest-flash-image.bin",
+    manifest_image = ":aspeed-manifest-flash-image-bhs.bin",
+    manifest_image_seek_kb = 1024,
+    visibility = ["//qemu:__pkg__"],
+)
+
+image_targets(
+    platform = "ast1080",
+    chip = "ast1080a0",
+    name = "image_oks",
+    output_bin = "ast1080-oks.bin",
+    image_size_kb = 4096,
+    ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
+    ssmcu_rom_seek_kb = 0,
+    bootmcu_rom_bin = "//ast1080/ast1080a0:boomcu-rom-xip.bin",
+    bootmcu_rom_seek_kb = 512,
+    manifest_image = ":aspeed-manifest-flash-image-oks.bin",
     manifest_image_seek_kb = 1024,
     visibility = ["//qemu:__pkg__"],
 )
