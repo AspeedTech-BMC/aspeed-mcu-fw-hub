@@ -66,8 +66,8 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
 
     _build_xtask_lines = [
         "cd $$MCU_SW",
-        "cargo build -p xtask --target-dir $$TOOL_TARGET",
-        "install -D -m 755 $$TOOL_TARGET/debug/xtask $$IMGTOOL/target/debug/xtask-2x",
+        "cargo build -p caliptra-mcu-xtask --target-dir $$TOOL_TARGET",
+        "install -D -m 755 $$TOOL_TARGET/debug/caliptra-mcu-xtask $$IMGTOOL/target/debug/xtask-2x",
     ]
 
     _run_lines = [
