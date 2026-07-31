@@ -1,18 +1,18 @@
-From 936cf4ce6aa3c8550dc849f7e5f1d2612fe56dc9 Mon Sep 17 00:00:00 2001
+From b3b6da29eba9d42467552a2e1fa3f48e2c3d6228 Mon Sep 17 00:00:00 2001
 From: Jamin Lin <jamin_lin@aspeedtech.com>
 Date: Wed, 17 Jun 2026 09:37:09 +0800
-Subject: [PATCH v1] hw/arm/aspeed_ast1040: Support FMC, SPI need to VERIFY
- after BSP ready
+Subject: [PATCH] hw/arm/aspeed_ast1040: Support FMC and SPI
 
 Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
 Change-Id: I0ebc0d52a6b89df872664db69845db7a45286359
 ---
- hw/block/m25p80_sfdp.h  |  1 +
- hw/arm/aspeed_ast1040.c | 14 ++++++++++++++
- hw/block/m25p80.c       |  2 ++
- hw/block/m25p80_sfdp.c  | 36 ++++++++++++++++++++++++++++++++++++
- hw/ssi/aspeed_smc.c     | 35 +++++++++++++++++++++++++++++++++++
- 5 files changed, 88 insertions(+)
+ hw/block/m25p80_sfdp.h      |   1 +
+ include/hw/ssi/aspeed_smc.h |   2 +-
+ hw/arm/aspeed_ast1040.c     |  37 +++++++++++++
+ hw/block/m25p80.c           |   2 +
+ hw/block/m25p80_sfdp.c      |  36 +++++++++++++
+ hw/ssi/aspeed_smc.c         | 103 ++++++++++++++++++++++++++++++++++++
+ 6 files changed, 180 insertions(+), 1 deletion(-)
 
 diff --git a/hw/block/m25p80_sfdp.h b/hw/block/m25p80_sfdp.h
 index c1e532de5a..d937621716 100644
@@ -26,23 +26,51 @@ index c1e532de5a..d937621716 100644
  uint8_t m25p80_sfdp_w25q80bl(uint32_t addr);
  uint8_t m25p80_sfdp_w25q01jvq(uint32_t addr);
  uint8_t m25p80_sfdp_w25q02jvm(uint32_t addr);
+diff --git a/include/hw/ssi/aspeed_smc.h b/include/hw/ssi/aspeed_smc.h
+index 76831422c6..4c4ea603c1 100644
+--- a/include/hw/ssi/aspeed_smc.h
++++ b/include/hw/ssi/aspeed_smc.h
+@@ -47,7 +47,7 @@ struct AspeedSMCFlash {
+ #define TYPE_ASPEED_SMC "aspeed.smc"
+ OBJECT_DECLARE_TYPE(AspeedSMCState, AspeedSMCClass, ASPEED_SMC)
+ 
+-#define ASPEED_SMC_R_MAX        (0x100 / 4)
++#define ASPEED_SMC_R_MAX        (0x300 / 4)
+ #define ASPEED_SMC_CS_MAX       5
+ 
+ struct AspeedSMCState {
 diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
-index 57ffc0807a..99ad294463 100644
+index 57ffc0807a..426c4b6ba4 100644
 --- a/hw/arm/aspeed_ast1040.c
 +++ b/hw/arm/aspeed_ast1040.c
-@@ -123,6 +123,7 @@ static void aspeed_soc_ast1040_init(Object *obj)
+@@ -94,7 +94,9 @@ static void aspeed_soc_ast1040_init(Object *obj)
+     Aspeed10x0SoCState *a = ASPEED10X0_SOC(obj);
+     AspeedSoCState *s = ASPEED_SOC(obj);
+     AspeedSoCClass *sc = ASPEED_SOC_GET_CLASS(s);
++    char typename[64];
+     int i;
++
+     object_initialize_child(obj, "armv7m", &a->armv7m, TYPE_ARMV7M);
+ 
+     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
+@@ -123,6 +125,12 @@ static void aspeed_soc_ast1040_init(Object *obj)
          object_initialize_child(obj, "wdt[*]", &s->wdt[i],
                                  "aspeed.wdt-ast2700");
      }
 +    object_initialize_child(obj, "fmc", &s->fmc, "aspeed.fmc-ast1040");
++
++    for (i = 0; i < sc->spis_num; i++) {
++        snprintf(typename, sizeof(typename), "aspeed.spi%d-ast1040", i);
++        object_initialize_child(obj, "spi[*]", &s->spi[i], typename);
++    }
  
      object_initialize_child(obj, "pwm", &s->pwm, TYPE_UNIMPLEMENTED_DEVICE);
      object_initialize_child(obj, "espi", &s->espi, TYPE_UNIMPLEMENTED_DEVICE);
-@@ -267,6 +268,19 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+@@ -267,6 +275,34 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
          aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->wdt[i]), 0, wdt_offset);
      }
  
-+	/* FMC, The number of CS is set at the board level */
++    /* FMC, The number of CS is set at the board level */
 +    object_property_set_link(OBJECT(&s->fmc), "dram", OBJECT(&s->sram[1]),
 +            &error_abort);
 +    if (!sysbus_realize(SYS_BUS_DEVICE(&s->fmc), errp)) {
@@ -55,9 +83,32 @@ index 57ffc0807a..99ad294463 100644
 +    sysbus_connect_irq(SYS_BUS_DEVICE(&s->fmc), 0,
 +                       aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_FMC));
 +
++    /* SPI */
++    for (i = 0; i < sc->spis_num; i++) {
++        object_property_set_link(OBJECT(&s->spi[i]), "dram",
++                                 OBJECT(&s->sram[1]), &error_abort);
++        if (!sysbus_realize(SYS_BUS_DEVICE(&s->spi[i]), errp)) {
++            return;
++        }
++        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 0,
++                        sc->memmap[ASPEED_DEV_SPI0 + i]);
++        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 1,
++                        ASPEED_SMC_GET_CLASS(&s->spi[i])->flash_window_base);
++        sysbus_connect_irq(SYS_BUS_DEVICE(&s->spi[i]), 0,
++                           aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_SPI0 + i));
++    }
++
      /* Unimplemented peripherals */
      aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->pwm),
                                    "aspeed.pwm",
+@@ -309,6 +345,7 @@ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+     sc->uarts_num       = 13;
+     sc->sgpio_num       = 2;
+     sc->wdts_num        = 8;
++    sc->spis_num        = 2;
+     sc->uarts_base      = ASPEED_DEV_UART0;
+     sc->irqmap          = aspeed_soc_ast1040_irqmap;
+     sc->memmap          = aspeed_soc_ast1040_memmap;
 diff --git a/hw/block/m25p80.c b/hw/block/m25p80.c
 index 4a4cda6602..e863dca510 100644
 --- a/hw/block/m25p80.c
@@ -119,10 +170,10 @@ index 87878c2bf0..3bea988ffb 100644
      0x53, 0x46, 0x44, 0x50, 0x05, 0x01, 0x00, 0xff,
      0x00, 0x05, 0x01, 0x10, 0x80, 0x00, 0x00, 0xff,
 diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
-index d87fbd798c..6dc00112e8 100644
+index d87fbd798c..cac3d36878 100644
 --- a/hw/ssi/aspeed_smc.c
 +++ b/hw/ssi/aspeed_smc.c
-@@ -2076,6 +2076,36 @@ static void aspeed_2700_spi2_class_init(ObjectClass *klass, const void *data)
+@@ -2076,6 +2076,94 @@ static void aspeed_2700_spi2_class_init(ObjectClass *klass, const void *data)
      asc->reg_ops           = &aspeed_2700_smc_flash_ops;
  }
  
@@ -138,20 +189,78 @@ index d87fbd798c..6dc00112e8 100644
 +    asc->r_timings         = R_TIMINGS;
 +    asc->nregs_timings     = 3;
 +    asc->conf_enable_w0    = CONF_ENABLE_W0;
-+    asc->cs_num_max        = 3;
++    asc->cs_num_max        = 2;
 +    asc->segments          = aspeed_2700_fmc_segments;
-+    asc->segment_addr_mask = 0xffffffff;
++    asc->segment_addr_mask = 0x0ff00ff0;
 +    asc->resets            = aspeed_2700_fmc_resets;
 +    asc->flash_window_base = 0x80000000;
-+    asc->flash_window_size = 1 * GiB;
++    asc->flash_window_size = 2 * GiB;
 +    asc->features          = ASPEED_SMC_FEATURE_DMA |
 +                             ASPEED_SMC_FEATURE_DMA_DRAM_ADDR_HIGH;
-+    asc->dma_flash_mask    = 0x2FFFFFFC;
-+    asc->dma_dram_mask     = 0xFFFFFFFC;
++    asc->dma_flash_mask    = 0x0FFFFFFC;
++    asc->dma_dram_mask     = 0x00FFFFFC;
 +    asc->dma_start_length  = 1;
 +    asc->nregs             = ASPEED_SMC_R_MAX;
-+    asc->segment_to_reg    = aspeed_2700_smc_segment_to_reg;
-+    asc->reg_to_segment    = aspeed_2700_smc_reg_to_segment;
++    asc->segment_to_reg    = aspeed_2600_smc_segment_to_reg;
++    asc->reg_to_segment    = aspeed_2600_smc_reg_to_segment;
++    asc->dma_ctrl          = aspeed_2600_smc_dma_ctrl;
++    asc->reg_ops           = &aspeed_2700_smc_flash_ops;
++}
++
++static void aspeed_1040_spi0_class_init(ObjectClass *klass, const void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    AspeedSMCClass *asc = ASPEED_SMC_CLASS(klass);
++
++    dc->desc               = "Aspeed 1040 SPI0 Controller";
++    asc->r_conf            = R_CONF;
++    asc->r_ce_ctrl         = R_CE_CTRL;
++    asc->r_ctrl0           = R_CTRL0;
++    asc->r_timings         = R_TIMINGS;
++    asc->nregs_timings     = 2;
++    asc->conf_enable_w0    = CONF_ENABLE_W0;
++    asc->cs_num_max        = 2;
++    asc->segments          = aspeed_2700_spi0_segments;
++    asc->segment_addr_mask = 0x0ff00ff0;
++    asc->flash_window_base = 0xA0000000;
++    asc->flash_window_size = 2 * GiB;
++    asc->features          = ASPEED_SMC_FEATURE_DMA |
++                             ASPEED_SMC_FEATURE_DMA_DRAM_ADDR_HIGH;
++    asc->dma_flash_mask    = 0x0FFFFFFC;
++    asc->dma_dram_mask     = 0x00FFFFFC;
++    asc->dma_start_length  = 1;
++    asc->nregs             = ASPEED_SMC_R_MAX;
++    asc->segment_to_reg    = aspeed_2600_smc_segment_to_reg;
++    asc->reg_to_segment    = aspeed_2600_smc_reg_to_segment;
++    asc->dma_ctrl          = aspeed_2600_smc_dma_ctrl;
++    asc->reg_ops           = &aspeed_2700_smc_flash_ops;
++}
++
++static void aspeed_1040_spi1_class_init(ObjectClass *klass, const void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    AspeedSMCClass *asc = ASPEED_SMC_CLASS(klass);
++
++    dc->desc               = "Aspeed 1040 SPI1 Controller";
++    asc->r_conf            = R_CONF;
++    asc->r_ce_ctrl         = R_CE_CTRL;
++    asc->r_ctrl0           = R_CTRL0;
++    asc->r_timings         = R_TIMINGS;
++    asc->nregs_timings     = 2;
++    asc->conf_enable_w0    = CONF_ENABLE_W0;
++    asc->cs_num_max        = 2;
++    asc->segments          = aspeed_2700_spi1_segments;
++    asc->segment_addr_mask = 0x0ff00ff0;
++    asc->flash_window_base = 0xC0000000;
++    asc->flash_window_size = 2 * GiB;
++    asc->features          = ASPEED_SMC_FEATURE_DMA |
++                             ASPEED_SMC_FEATURE_DMA_DRAM_ADDR_HIGH;
++    asc->dma_flash_mask    = 0x0FFFFFFC;
++    asc->dma_dram_mask     = 0x00FFFFFC;
++    asc->dma_start_length  = 1;
++    asc->nregs             = ASPEED_SMC_R_MAX;
++    asc->segment_to_reg    = aspeed_2600_smc_segment_to_reg;
++    asc->reg_to_segment    = aspeed_2600_smc_reg_to_segment;
 +    asc->dma_ctrl          = aspeed_2600_smc_dma_ctrl;
 +    asc->reg_ops           = &aspeed_2700_smc_flash_ops;
 +}
@@ -159,7 +268,7 @@ index d87fbd798c..6dc00112e8 100644
  static const TypeInfo aspeed_smc_types[] = {
      {
          .name           = TYPE_ASPEED_SMC_FLASH,
-@@ -2107,6 +2137,11 @@ static const TypeInfo aspeed_smc_types[] = {
+@@ -2107,6 +2195,21 @@ static const TypeInfo aspeed_smc_types[] = {
          .parent     = TYPE_ASPEED_SMC,
          .class_init = aspeed_1030_spi2_class_init,
      },
@@ -167,6 +276,16 @@ index d87fbd798c..6dc00112e8 100644
 +        .name       = "aspeed.fmc-ast1040",
 +        .parent     = TYPE_ASPEED_SMC,
 +        .class_init = aspeed_1040_fmc_class_init,
++    },
++    {
++        .name       = "aspeed.spi0-ast1040",
++        .parent     = TYPE_ASPEED_SMC,
++        .class_init = aspeed_1040_spi0_class_init,
++    },
++    {
++        .name       = "aspeed.spi1-ast1040",
++        .parent     = TYPE_ASPEED_SMC,
++        .class_init = aspeed_1040_spi1_class_init,
 +    },
      {
          .name       = "aspeed.smc-ast2400",
