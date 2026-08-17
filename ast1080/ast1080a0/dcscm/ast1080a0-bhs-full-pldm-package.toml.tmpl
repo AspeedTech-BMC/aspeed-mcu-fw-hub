@@ -1,0 +1,32 @@
+# AST1080 DCSCM BHS complete active-image update package.
+# @@IMAGE_LOCATION@@ is replaced with the unpadded authenticated FLSH bundle.
+
+[package_header_information]
+package_header_identifier = "7B291C996DB64208801B02026E463C78"
+package_header_format_revision = 1
+package_release_date_time = "2026-08-13T00:00:00Z"
+package_version_string = "ast1080-dcscm-bhs-full-1.0"
+package_version_string_type = "ASCII"
+
+[[firmware_device_id_records]]
+device_update_option_flags = 0
+component_image_set_version_string_type = "ASCII"
+applicable_components = [0]
+component_image_set_version_string = "ast1080-dcscm-bhs-full-1.0"
+firmware_device_package_data = []
+reference_manifest_data = []
+
+[firmware_device_id_records.initial_descriptor]
+descriptor_type = "IANA_ENTERPRISE_ID"
+descriptor_data = [0x00, 0x00, 0xA0, 0x15]
+
+[[component_image_information]]
+image_location = "@@IMAGE_LOCATION@@"
+classification = 0x000A
+identifier = 0x1080
+comparison_stamp = 0xFFFFFFFF
+options = 0
+requested_activation_method = 0
+version_string_type = "ASCII"
+version_string = "ast1080-dcscm-bhs-full-1.0"
+opaque_data = []

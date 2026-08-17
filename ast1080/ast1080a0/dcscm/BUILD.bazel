@@ -4,6 +4,7 @@
 load("//bazel:zephyr.bzl", "zephyr_west_build")
 load("//bazel:manifest.bzl", "manifest_targets")
 load("//bazel:image.bzl", "image_targets")
+load("//bazel:pldm.bzl", "pldm_package")
 
 zephyr_west_build(
     name = "cm4_bhs",
@@ -38,7 +39,6 @@ manifest_targets(
     out_namespace = "ast1080a0-bhs",
     flash_image_out = "aspeed-manifest-flash-image-bhs.bin",
     cm4_target = ":cm4_bhs",
-    bootmcu_target = ":bootmcu",
     manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
@@ -51,7 +51,6 @@ manifest_targets(
     out_namespace = "ast1080a0-oks",
     flash_image_out = "aspeed-manifest-flash-image-oks.bin",
     cm4_target = ":cm4_oks",
-    bootmcu_target = ":bootmcu",
     manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
@@ -66,11 +65,24 @@ image_targets(
     image_size_kb = 4096,
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
-    bootmcu_rom_bin = "//ast1080/ast1080a0:boomcu-rom-xip.bin",
-    bootmcu_rom_seek_kb = 512,
     manifest_image = ":aspeed-manifest-flash-image-bhs.bin",
     manifest_image_seek_kb = 1024,
     visibility = ["//qemu:__pkg__"],
+)
+
+pldm_package(
+    name = "pldm_bhs",
+    firmware_image = ":aspeed-manifest-flash-image-bhs.bin",
+    manifest_template = ":ast1080a0-bhs-full-pldm-package.toml.tmpl",
+    out = "ast1080-bhs-update.pldm",
+)
+
+filegroup(
+    name = "release_bhs",
+    srcs = [
+        ":image_bhs",
+        ":pldm_bhs",
+    ],
 )
 
 image_targets(
@@ -81,9 +93,22 @@ image_targets(
     image_size_kb = 4096,
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
-    bootmcu_rom_bin = "//ast1080/ast1080a0:boomcu-rom-xip.bin",
-    bootmcu_rom_seek_kb = 512,
     manifest_image = ":aspeed-manifest-flash-image-oks.bin",
     manifest_image_seek_kb = 1024,
     visibility = ["//qemu:__pkg__"],
+)
+
+pldm_package(
+    name = "pldm_oks",
+    firmware_image = ":aspeed-manifest-flash-image-oks.bin",
+    manifest_template = ":ast1080a0-oks-full-pldm-package.toml.tmpl",
+    out = "ast1080-oks-update.pldm",
+)
+
+filegroup(
+    name = "release_oks",
+    srcs = [
+        ":image_oks",
+        ":pldm_oks",
+    ],
 )

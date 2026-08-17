@@ -120,9 +120,20 @@ bazel build //ast1080/ast1080a0/evb:image
 
 ### AST1080 DCSCM
 
+Build both the flash image and PLDM update package:
+
+```bash
+bazel build //ast1080/ast1080a0/dcscm:release_bhs
+bazel build //ast1080/ast1080a0/dcscm:release_oks
+```
+
+Build either artifact independently:
+
 ```bash
 bazel build //ast1080/ast1080a0/dcscm:image_bhs
+bazel build //ast1080/ast1080a0/dcscm:pldm_bhs
 bazel build //ast1080/ast1080a0/dcscm:image_oks
+bazel build //ast1080/ast1080a0/dcscm:pldm_oks
 ```
 
 ### Individual targets
