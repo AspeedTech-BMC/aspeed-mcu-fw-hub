@@ -1,0 +1,7 @@
+# Copyright (c) 2026 ASPEED Technology Inc.
+# SPDX-License-Identifier: MIT
+
+exports_files(
+    ["ast1080a0-default-ecc-lms-mldsa-manifest.toml"],
+    visibility = ["//visibility:public"],
+)

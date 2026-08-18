@@ -39,7 +39,7 @@ manifest_targets(
     out_namespace = "ast1080a0-bhs",
     flash_image_out = "aspeed-manifest-flash-image-bhs.bin",
     cm4_target = ":cm4_bhs",
-    manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
+    manifest_cfg = "//ast1080/ast1080a0/manifest:ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
 )
@@ -51,7 +51,7 @@ manifest_targets(
     out_namespace = "ast1080a0-oks",
     flash_image_out = "aspeed-manifest-flash-image-oks.bin",
     cm4_target = ":cm4_oks",
-    manifest_cfg = "config/ast1080a0-default-ecc-lms-mldsa-manifest.toml",
+    manifest_cfg = "//ast1080/ast1080a0/manifest:ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
     serialize_after = ":manifest_bhs",

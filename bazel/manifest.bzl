@@ -11,6 +11,7 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
                      serialize_after = None):
     _IMAGE_PREFIX = "{}-default".format(chip)
     _MANIFEST_CFG = manifest_cfg
+    _MANIFEST_CFG_IS_LABEL = manifest_cfg.startswith("//") or manifest_cfg.startswith(":")
     # Distinct out_namespace/flash_image_out needed if calling this twice
     # for the same chip — two genrules can't share an output path.
     _OUT_NS = out_namespace or _IMAGE_PREFIX
@@ -23,6 +24,8 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         "@cptra_imgtool//:all",
         "@caliptra_mcu_sw//:all",
     ]
+    if _MANIFEST_CFG_IS_LABEL:
+        _srcs.append(manifest_cfg)
     if bootmcu_target != None:
         _srcs.append(bootmcu_target)
     if serialize_after != None:
@@ -71,10 +74,16 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         "install -D -m 755 $$TOOL_TARGET/debug/caliptra-mcu-xtask $$IMGTOOL/target/debug/xtask-2x",
     ]
 
+    if _MANIFEST_CFG_IS_LABEL:
+        _MANIFEST_CFG_ARG = "$$EXECROOT/$(location {})".format(_MANIFEST_CFG)
+    else:
+        # Backward compatibility for configs stored under cptra_imgtool/config.
+        _MANIFEST_CFG_ARG = _MANIFEST_CFG
+
     _run_lines = [
         "cd $$IMGTOOL",
         "rm -rf out/",
-        "cargo run create-auth-flash-2x --cfg {} --pqc-key-type 1 --prebuilt-dir $$STAGE".format(_MANIFEST_CFG),
+        "cargo run create-auth-flash-2x --cfg {} --pqc-key-type 1 --prebuilt-dir $$STAGE".format(_MANIFEST_CFG_ARG),
     ]
 
     _install_lines = [
