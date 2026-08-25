@@ -54,7 +54,6 @@ manifest_targets(
     manifest_cfg = "//ast1080/ast1080a0/manifest:ast1080a0-default-ecc-lms-mldsa-manifest.toml",
     ssmcu_runtime_target = "//ast1080/ast1080a0:ssmcu-runtime",
     bmc_pb_target = "//ast1080/ast1080a0:bmc-pb",
-    serialize_after = ":manifest_bhs",
 )
 
 image_targets(
