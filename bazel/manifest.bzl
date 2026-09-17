@@ -3,8 +3,8 @@
 
 _TOOL = "target/tools/cptra_2x"
 
-def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_target,
-                     manifest_cfg, bootmcu_target = None,
+def manifest_targets(platform, chip, ssmcu_runtime_target, bmc_pb_target,
+                     manifest_cfg, cm4_target = None, bootmcu_target = None,
                      name = "manifest",
                      out_namespace = None,
                      flash_image_out = "aspeed-manifest-flash-image.bin",
@@ -18,7 +18,6 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     _REC = "recovery/{}".format(_OUT_NS)
 
     _srcs = [
-        cm4_target,
         ssmcu_runtime_target,
         bmc_pb_target,
         "@cptra_imgtool//:all",
@@ -26,6 +25,8 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
     ]
     if _MANIFEST_CFG_IS_LABEL:
         _srcs.append(manifest_cfg)
+    if cm4_target != None:
+        _srcs.append(cm4_target)
     if bootmcu_target != None:
         _srcs.append(bootmcu_target)
     if serialize_after != None:
@@ -38,10 +39,13 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         # Fixed name: the manifest toml expects "zephyr-shell-module.bin" /
         # "ssmcu-runtime.bin" in prebuilt-dir regardless of these targets'
         # own output filenames.
-        "install -m 644 $(location {}) $$STAGE/zephyr-shell-module.bin".format(cm4_target),
         "install -m 644 $(location {}) $$STAGE/ssmcu-runtime.bin".format(ssmcu_runtime_target),
         "install -m 644 $(locations {}) $$STAGE/".format(bmc_pb_target),
     ]
+    if cm4_target != None:
+        _install_input_lines.append(
+            "install -m 644 $(location {}) $$STAGE/zephyr-shell-module.bin".format(cm4_target)
+        )
     if bootmcu_target != None:
         _install_input_lines.append(
             "install -m 644 $(location {}) $$STAGE/".format(bootmcu_target)
@@ -108,8 +112,9 @@ def manifest_targets(platform, chip, cm4_target, ssmcu_runtime_target, bmc_pb_ta
         "{}/fw_toc.bin".format(_REC),
         "{}/caliptra-fw_align_256.bin".format(_REC),
         "{}/ssmcu-runtime_align_256.bin".format(_REC),
-        "{}/zephyr-shell-module_align_256.bin".format(_REC),
     ]
+    if cm4_target != None:
+        _outs.append("{}/zephyr-shell-module_align_256.bin".format(_REC))
     if bootmcu_target != None:
         _outs.append("{}/zephyr-mcu-runtime_align_256.bin".format(_REC))
 
