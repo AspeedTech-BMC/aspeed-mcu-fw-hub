@@ -4,7 +4,8 @@
 load("//bazel:caliptra.bzl", "caliptra_targets")
 load("//bazel:bmc_pb.bzl", "bmc_pb_target")
 
-_RISCV = "target/riscv32imc-unknown-none-elf/devel"
+_PROFILE = "release"
+_RISCV = "target/riscv32imc-unknown-none-elf/{}".format(_PROFILE)
 
 bmc_pb_target(pb = [
     "ast1040a0/bootmcu-rom-xip.bin",
@@ -14,12 +15,14 @@ bmc_pb_target(pb = [
 
 caliptra_targets(
     platform = "ast1040",
+    profile = _PROFILE,
     ssmcu_runtime_bin = "{}/runtime-ast1040.bin".format(_RISCV),
     ssmcu_runtime_out = "ssmcu-runtime.bin",
 )
 
 caliptra_targets(
     platform = "ast1040",
+    profile = _PROFILE,
     name = "ssmcu-runtime-streamingboot-i3c",
     ssmcu_runtime_bin = "{}/runtime-ast1040.bin".format(_RISCV),
     ssmcu_runtime_out = "ssmcu-runtime-streamingboot-i3c.bin",

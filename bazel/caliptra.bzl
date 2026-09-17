@@ -3,13 +3,14 @@
 
 def caliptra_targets(
         platform,
+        profile,
         ssmcu_runtime_bin,
         ssmcu_runtime_out = "ssmcu-runtime.bin",
         features = None,
         name = "ssmcu-runtime",
         serialize_after = None):
 
-    _runtime_build_cmd = "cargo xtask runtime-build --platform {}".format(platform)
+    _runtime_build_cmd = "cargo xtask runtime-build --platform {} --profile {}".format(platform, profile)
     if features != None:
         _runtime_build_cmd += " --features {}".format(features)
 
