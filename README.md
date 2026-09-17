@@ -79,7 +79,7 @@ source ./setup.sh                      # Gerrit (default)
 
 `setup.sh` steps:
 1. Create Python venv + install `west`
-2. Install Rust/Cargo under `.cargo/`
+2. Install rustup under `.cargo/` + `.rustup/` (no default toolchain; each repo auto-selects its own via `rust-toolchain.toml`)
 3. Download Bazelisk to `tools/bazel` (auto-selects Bazel 9.1.1 via `.bazelversion`)
 4. Download Zephyr SDK (version defined in `repos_gerrit.sh` / `repos_github.sh`)
 5. Clone `caliptra-mcu-sw`, `cptra_imgtool`, `bmc-pb`
@@ -225,8 +225,8 @@ deactivate
 
 ## Manual Cargo Build
 
-Must run from the repo root. Cargo and Rustup are installed locally under `.cargo/` and `.rustup/`,
-not the system default, so environment variables must be set before use.
+Cargo and Rustup are installed locally under `.cargo/` and `.rustup/`, not the system
+default, so set the environment from the repo root before use.
 
 ```bash
 cd aspeed-mcu-fw-hub
@@ -235,11 +235,13 @@ export CARGO_HOME=$(pwd)/.cargo
 source .cargo/env
 ```
 
-Example:
+Run cargo from inside the repo you want to build, not from the repo root: no default
+toolchain is installed, and each repo pins its own in `rust-toolchain.toml` for rustup
+to download on first use.
 
 ```bash
 cd caliptra-mcu-sw
-cargo xtask runtime-build --platform ast1040
+cargo xtask runtime-build --platform ast1040 --profile release
 ```
 
 ## QEMU

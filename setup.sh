@@ -68,12 +68,14 @@ deactivate
 echo "=== [2/6] Rust ==="
 export CARGO_HOME RUSTUP_HOME
 if [ ! -f "$CARGO_HOME/bin/cargo" ]; then
+    # No default toolchain: every cargo invocation in this build runs inside
+    # a cloned repo, and each of those pins its own toolchain in
+    # rust-toolchain.toml. A default would only be an unused copy.
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-        | sh -s -- -y --no-modify-path || exit 1
+        | sh -s -- -y --no-modify-path --default-toolchain none || exit 1
 fi
 source "$CARGO_HOME/env"
-echo "  rustc: $(rustc --version)"
-echo "  cargo: $(cargo --version)"
+echo "  rustup: $(rustup --version 2>/dev/null)"
 
 # [3] Bazelisk — auto-selects Bazel version from .bazelversion
 echo "=== [3/6] Bazelisk ==="
