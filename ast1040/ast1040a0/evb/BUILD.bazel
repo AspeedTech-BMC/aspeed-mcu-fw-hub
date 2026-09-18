@@ -54,9 +54,9 @@ image_targets(
     ssmcu_rom_bin = "//ast1040/ast1040a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
     bootmcu_rom_bin = "//ast1040/ast1040a0:bootmcu-rom-xip.bin",
-    bootmcu_rom_seek_kb = 512,
+    bootmcu_rom_seek_kb = 160,
     manifest_image = ":aspeed-manifest-flash-image.bin",
-    manifest_image_seek_kb = 1024,
+    manifest_image_seek_kb = 320,
     visibility = ["//qemu:__pkg__"],
 )
 

@@ -38,6 +38,6 @@ image_targets(
     ssmcu_rom_bin = "//ast1080/ast1080a0:ssmcu-rom-xip.bin",
     ssmcu_rom_seek_kb = 0,
     manifest_image = ":aspeed-manifest-flash-image.bin",
-    manifest_image_seek_kb = 1024,
+    manifest_image_seek_kb = 320,
     visibility = ["//qemu:__pkg__"],
 )
