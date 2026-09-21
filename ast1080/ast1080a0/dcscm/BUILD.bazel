@@ -73,7 +73,9 @@ pldm_package(
     name = "pldm_bhs",
     firmware_image = ":aspeed-manifest-flash-image-bhs.bin",
     manifest_template = ":ast1080a0-bhs-full-pldm-package.toml.tmpl",
+    metadata_v1_0 = ":ast1080a0-bhs-full-pldm-package-v1.0.json",
     out = "ast1080-bhs-update.pldm",
+    version_config = "@zephyr_ws//:ast1080_dcscm_bhs_pldm_config",
 )
 
 filegroup(
@@ -101,7 +103,9 @@ pldm_package(
     name = "pldm_oks",
     firmware_image = ":aspeed-manifest-flash-image-oks.bin",
     manifest_template = ":ast1080a0-oks-full-pldm-package.toml.tmpl",
+    metadata_v1_0 = ":ast1080a0-oks-full-pldm-package-v1.0.json",
     out = "ast1080-oks-update.pldm",
+    version_config = "@zephyr_ws//:ast1080_dcscm_oks_pldm_config",
 )
 
 filegroup(

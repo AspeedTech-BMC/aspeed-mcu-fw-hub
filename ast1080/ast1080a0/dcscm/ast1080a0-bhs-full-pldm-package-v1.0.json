@@ -1,0 +1,30 @@
+{
+    "PackageHeaderInformation": {
+        "PackageHeaderIdentifier": "F018878CCB7D49439800A02F059ACA02",
+        "PackageHeaderFormatVersion": 1,
+        "PackageReleaseDateTime": "2026-08-13T00:00:00",
+        "PackageVersionString": "ast1080-dcscm-bhs-full-1.0"
+    },
+    "FirmwareDeviceIdentificationArea": [
+        {
+            "DeviceUpdateOptionFlags": [],
+            "ComponentImageSetVersionString": "ast1080-dcscm-bhs-full-1.0",
+            "ApplicableComponents": [0],
+            "Descriptors": [
+                {
+                    "DescriptorType": 1,
+                    "DescriptorData": "0000a015"
+                }
+            ]
+        }
+    ],
+    "ComponentImageInformationArea": [
+        {
+            "ComponentClassification": 10,
+            "ComponentIdentifier": 4224,
+            "ComponentOptions": [],
+            "RequestedComponentActivationMethod": [],
+            "ComponentVersionString": "ast1080-dcscm-bhs-full-1.0"
+        }
+    ]
+}

@@ -25,6 +25,24 @@ filegroup(
     ], exclude = ["**/.git/**", "build/**"]),
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "pfr_pldm_fwu_pkg_v1_tool",
+    srcs = ["aspeed-zephyr-project/apps/aspeed-pfr/tools/pldm-fwu-pkg/img.py"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "ast1080_dcscm_bhs_pldm_config",
+    srcs = ["aspeed-zephyr-project/apps/aspeed-pfr/boards/ast1080_dcscm_bhs.conf"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "ast1080_dcscm_oks_pldm_config",
+    srcs = ["aspeed-zephyr-project/apps/aspeed-pfr/boards/ast1080_dcscm_oks.conf"],
+    visibility = ["//visibility:public"],
+)
 """,
 )
 
