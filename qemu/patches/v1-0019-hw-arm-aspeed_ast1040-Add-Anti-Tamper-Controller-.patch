@@ -1,0 +1,54 @@
+From 7c2f7b041180421ee4af7f471b84309e84d741e1 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Thu, 24 Sep 2026 16:27:38 +0800
+Subject: [PATCH v1 19/30] hw/arm/aspeed_ast1040: Add Anti-Tamper Controller
+ (ATC) as an unimplemented device
+
+The AST1040 provides an Anti-Tamper Controller (ATC) at 0x74c35000,
+but the controller is not modeled yet.
+
+Add the ATC register region as an unimplemented device to reflect the
+AST1040 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: Id20d1eaba3fc7cdfbc4a389b01dc59561faa3e91
+---
+ include/hw/arm/aspeed_soc.h | 1 +
+ hw/arm/aspeed_ast1040.c     | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 16c7a625bf..709a805111 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -196,6 +196,7 @@ struct AspeedSoCClass {
+ enum {
+     ASPEED_DEV_ACRY,
+     ASPEED_DEV_ADC,
++    ASPEED_DEV_ATC,
+     ASPEED_DEV_DP,
+     ASPEED_DEV_DPMCU,
+     ASPEED_DEV_EHCI1,
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 406a68f81f..a851329197 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -50,6 +50,7 @@ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+     [ASPEED_DEV_UART10]         = 0x74C33A00,
+     [ASPEED_DEV_UART11]         = 0x74C33B00,
+     [ASPEED_DEV_UART12]         = 0x74C33C00,
++    [ASPEED_DEV_ATC]            = 0x74C35000,
+     [ASPEED_DEV_WDT]            = 0x74C37000,
+     [ASPEED_DEV_TIMER1]         = 0x74C3A000,
+ };
+@@ -95,6 +96,7 @@ static const AspeedUnimpDevice aspeed_soc_ast1040_unimp_devs[] = {
+     { "spi0-filter", "aspeed.spi0-filter", ASPEED_DEV_SPI0_FILTER, 0x1000 },
+     { "spi1-filter", "aspeed.spi1-filter", ASPEED_DEV_SPI1_FILTER, 0x1000 },
+     { "otp", "aspeed.otp", ASPEED_DEV_OTP, 0x800 },
++    { "atc", "aspeed.atc", ASPEED_DEV_ATC, 0x100 },
+ };
+ QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs) > ASPEED_UNIMP_NUM);
+ 
+-- 
+2.53.0
+

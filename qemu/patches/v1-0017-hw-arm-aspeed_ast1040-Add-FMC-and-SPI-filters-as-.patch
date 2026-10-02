@@ -1,0 +1,137 @@
+From f6b3a28c4e029a130c213db4efcd0fdbbab53128 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Thu, 24 Sep 2026 15:11:46 +0800
+Subject: [PATCH v1 17/30] hw/arm/aspeed_ast1040: Add FMC and SPI filters as
+ unimplemented devices
+
+The AST1040 provides filter register regions for the FMC, SPI0 and SPI1
+controllers at the following addresses:
+
+FMC filter: 0x74000400
+SPI0 filter: 0x74010400
+SPI1 filter: 0x74020400
+
+These filters are not modeled yet. Add the register regions as
+unimplemented devices to reflect the AST1040 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I968e5c003aea7072e3f7cf6d179bce795dd24115
+---
+ include/hw/arm/aspeed_soc.h |  3 ++
+ hw/arm/aspeed_ast1040.c     | 72 ++++++++++++++++++++-----------------
+ 2 files changed, 42 insertions(+), 33 deletions(-)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index a1c47f7446..16c7a625bf 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -210,6 +210,7 @@ enum {
+     ASPEED_DEV_ETH3,
+     ASPEED_DEV_ETH4,
+     ASPEED_DEV_FMC,
++    ASPEED_DEV_FMC_FILTER,
+     ASPEED_DEV_FSI1,
+     ASPEED_DEV_FSI2,
+     ASPEED_DEV_GPIO,
+@@ -272,6 +273,8 @@ enum {
+     ASPEED_DEV_SPI0,
+     ASPEED_DEV_SPI1,
+     ASPEED_DEV_SPI2,
++    ASPEED_DEV_SPI0_FILTER,
++    ASPEED_DEV_SPI1_FILTER,
+     ASPEED_DEV_SRAM0,
+     ASPEED_DEV_SRAM1,
+     ASPEED_DEV_TIMER1,
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 5f990f4834..d297481170 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -15,39 +15,42 @@
+ #include "hw/arm/aspeed_soc.h"
+ 
+ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+-    [ASPEED_DEV_SRAM1]     = 0x00000000, /* Hyper RAM */
+-    [ASPEED_DEV_FMC]       = 0x74000000,
+-    [ASPEED_DEV_SPI0]      = 0x74010000,
+-    [ASPEED_DEV_SPI1]      = 0x74020000,
+-    [ASPEED_DEV_PWM]       = 0x740C0000,
+-    [ASPEED_DEV_UDC]       = 0x74120000,
+-    [ASPEED_DEV_SRAM0]     = 0x74B80000,
+-    [ASPEED_DEV_ADC]       = 0x74C00000,
+-    [ASPEED_DEV_JTAG0]     = 0x74C01000,
+-    [ASPEED_DEV_SCU]       = 0x74C02000,
+-    [ASPEED_DEV_ESPI]      = 0x74C05000,
+-    [ASPEED_DEV_JTAG1]     = 0x74C09000,
+-    [ASPEED_DEV_GPIO]      = 0x74C0B000,
+-    [ASPEED_DEV_SGPIOM0]   = 0x74C0C000,
+-    [ASPEED_DEV_SGPIOM1]   = 0x74C0D000,
+-    [ASPEED_DEV_I2C]       = 0x74C0F000,
+-    [ASPEED_DEV_PECI]      = 0x74C1F000,
+-    [ASPEED_DEV_I3C]       = 0x74C20000,
+-    [ASPEED_DEV_UART0]     = 0x74C33000,
+-    [ASPEED_DEV_UART1]     = 0x74C33100,
+-    [ASPEED_DEV_UART2]     = 0x74C33200,
+-    [ASPEED_DEV_UART3]     = 0x74C33300,
+-    [ASPEED_DEV_UART4]     = 0x74C33400,
+-    [ASPEED_DEV_UART5]     = 0x74C33500,
+-    [ASPEED_DEV_UART6]     = 0x74C33600,
+-    [ASPEED_DEV_UART7]     = 0x74C33700,
+-    [ASPEED_DEV_UART8]     = 0x74C33800,
+-    [ASPEED_DEV_UART9]     = 0x74C33900,
+-    [ASPEED_DEV_UART10]    = 0x74C33A00,
+-    [ASPEED_DEV_UART11]    = 0x74C33B00,
+-    [ASPEED_DEV_UART12]    = 0x74C33C00,
+-    [ASPEED_DEV_WDT]       = 0x74C37000,
+-    [ASPEED_DEV_TIMER1]    = 0x74C3A000,
++    [ASPEED_DEV_SRAM1]          = 0x00000000, /* Hyper RAM */
++    [ASPEED_DEV_FMC]            = 0x74000000,
++    [ASPEED_DEV_FMC_FILTER]     = 0x74000400,
++    [ASPEED_DEV_SPI0]           = 0x74010000,
++    [ASPEED_DEV_SPI0_FILTER]    = 0x74010400,
++    [ASPEED_DEV_SPI1]           = 0x74020000,
++    [ASPEED_DEV_SPI1_FILTER]    = 0x74020400,
++    [ASPEED_DEV_PWM]            = 0x740C0000,
++    [ASPEED_DEV_UDC]            = 0x74120000,
++    [ASPEED_DEV_SRAM0]          = 0x74B80000,
++    [ASPEED_DEV_ADC]            = 0x74C00000,
++    [ASPEED_DEV_JTAG0]          = 0x74C01000,
++    [ASPEED_DEV_SCU]            = 0x74C02000,
++    [ASPEED_DEV_ESPI]           = 0x74C05000,
++    [ASPEED_DEV_JTAG1]          = 0x74C09000,
++    [ASPEED_DEV_GPIO]           = 0x74C0B000,
++    [ASPEED_DEV_SGPIOM0]        = 0x74C0C000,
++    [ASPEED_DEV_SGPIOM1]        = 0x74C0D000,
++    [ASPEED_DEV_I2C]            = 0x74C0F000,
++    [ASPEED_DEV_PECI]           = 0x74C1F000,
++    [ASPEED_DEV_I3C]            = 0x74C20000,
++    [ASPEED_DEV_UART0]          = 0x74C33000,
++    [ASPEED_DEV_UART1]          = 0x74C33100,
++    [ASPEED_DEV_UART2]          = 0x74C33200,
++    [ASPEED_DEV_UART3]          = 0x74C33300,
++    [ASPEED_DEV_UART4]          = 0x74C33400,
++    [ASPEED_DEV_UART5]          = 0x74C33500,
++    [ASPEED_DEV_UART6]          = 0x74C33600,
++    [ASPEED_DEV_UART7]          = 0x74C33700,
++    [ASPEED_DEV_UART8]          = 0x74C33800,
++    [ASPEED_DEV_UART9]          = 0x74C33900,
++    [ASPEED_DEV_UART10]         = 0x74C33A00,
++    [ASPEED_DEV_UART11]         = 0x74C33B00,
++    [ASPEED_DEV_UART12]         = 0x74C33C00,
++    [ASPEED_DEV_WDT]            = 0x74C37000,
++    [ASPEED_DEV_TIMER1]         = 0x74C3A000,
+ };
+ 
+ static const int aspeed_soc_ast1040_irqmap[] = {
+@@ -87,6 +90,9 @@ static const AspeedUnimpDevice aspeed_soc_ast1040_unimp_devs[] = {
+     { "udc",     "aspeed.udc",   ASPEED_DEV_UDC,   0x4000 },
+     { "jtag[0]", "aspeed.jtag0", ASPEED_DEV_JTAG0, 0x100 },
+     { "jtag[1]", "aspeed.jtag1", ASPEED_DEV_JTAG1, 0x100 },
++    { "fmc-filter",  "aspeed.fmc-filter",  ASPEED_DEV_FMC_FILTER,  0x1000 },
++    { "spi0-filter", "aspeed.spi0-filter", ASPEED_DEV_SPI0_FILTER, 0x1000 },
++    { "spi1-filter", "aspeed.spi1-filter", ASPEED_DEV_SPI1_FILTER, 0x1000 },
+ };
+ QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs) > ASPEED_UNIMP_NUM);
+ 
+-- 
+2.53.0
+

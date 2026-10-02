@@ -1,0 +1,68 @@
+From fe842d6df32cc2bbbbd3baf8f42d274e28b83424 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 16:41:32 +0800
+Subject: [PATCH v1 28/30] hw/arm/aspeed_ast1040: Add AST1080 I2C filter as an
+ unimplemented device
+
+The AST1080 provides an SMBus Filter Controller (I2C filter) at
+0x74c14000, but the controller is not modeled yet.
+
+This controller is only available on the AST1080. The AST1040 does not
+have it, so it is added to the AST1080 specific init and realize
+functions instead of the common AST10x0 G2 ones.
+
+Add the register region as an unimplemented device to reflect the
+AST1080 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: Ie6763d6574622ecf68e288bd29da8f6799ce365b
+---
+ include/hw/arm/aspeed_soc.h | 3 ++-
+ hw/arm/aspeed_ast1040.c     | 3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 1d4acce310..4f50a678df 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -63,7 +63,7 @@
+ #define ASPEED_INTC_NUM  2
+ #define ASPEED_IOEXP_NUM 2
+ #define ASPEED_SRAM_NUM 2
+-#define ASPEED_UNIMP_NUM 14
++#define ASPEED_UNIMP_NUM 15
+ 
+ typedef struct AspeedUnimpDevice {
+     const char *qom_name;
+@@ -219,6 +219,7 @@ enum {
+     ASPEED_DEV_GPIO_1_8V,
+     ASPEED_DEV_HACE,
+     ASPEED_DEV_I2C,
++    ASPEED_DEV_I2C_FILTER,
+     ASPEED_DEV_I3C,
+     ASPEED_DEV_IBT,
+     ASPEED_DEV_INTC,
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 6b6aa4a145..aebe7b2886 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -36,6 +36,8 @@ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+     [ASPEED_DEV_SGPIOM0]        = 0x74C0C000,
+     [ASPEED_DEV_SGPIOM1]        = 0x74C0D000,
+     [ASPEED_DEV_I2C]            = 0x74C0F000,
++    /* I2C Filter: AST1080 only */
++    [ASPEED_DEV_I2C_FILTER]     = 0x74C14000,
+     /* SPIM0 - SPIM2: AST1080 only */
+     [ASPEED_DEV_SPIM0]          = 0x74C15000,
+     [ASPEED_DEV_SPIM1]          = 0x74C16000,
+@@ -116,6 +118,7 @@ static const AspeedUnimpDevice aspeed_soc_ast1080_unimp_devs[] = {
+     { "spim0", "aspeed.spim0", ASPEED_DEV_SPIM0, 0x1000 },
+     { "spim1", "aspeed.spim1", ASPEED_DEV_SPIM1, 0x1000 },
+     { "spim2", "aspeed.spim2", ASPEED_DEV_SPIM2, 0x1000 },
++    { "i2c-filter", "aspeed.i2c-filter", ASPEED_DEV_I2C_FILTER, 0x1000 },
+ };
+ #define AST1080_UNIMP_NUM ARRAY_SIZE(aspeed_soc_ast1080_unimp_devs)
+ QEMU_BUILD_BUG_ON(AST10X0_G2_UNIMP_NUM + AST1080_UNIMP_NUM > ASPEED_UNIMP_NUM);
+-- 
+2.53.0
+

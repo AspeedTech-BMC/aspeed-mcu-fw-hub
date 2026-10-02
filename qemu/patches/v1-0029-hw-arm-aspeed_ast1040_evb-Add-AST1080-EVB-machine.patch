@@ -1,0 +1,63 @@
+From 1c6c6d0550c7ec840e603001424b164d2add89ee Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 13:17:49 +0800
+Subject: [PATCH v1 29/30] hw/arm/aspeed_ast1040_evb: Add AST1080 EVB machine
+ support
+
+Add a new machine definition ast1080-evb to support the Aspeed AST1080
+evaluation board. The new EVB reuses the same BIC framework used by
+AST1040, as both SoCs share the same core peripherals and controller
+designs.
+
+The AST1080 EVB machine initializes the ast1080-a0 SoC.
+This enables QEMU to boot and emulate firmware images for AST1080-based
+platforms.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I5b1152a224cf5f8d0038f6a91b8b8dc329a69b6d
+---
+ hw/arm/aspeed_ast1040_evb.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast1040_evb.c b/hw/arm/aspeed_ast1040_evb.c
+index 486f0f6a1b..9da8021653 100644
+--- a/hw/arm/aspeed_ast1040_evb.c
++++ b/hw/arm/aspeed_ast1040_evb.c
+@@ -75,11 +75,34 @@ static void aspeed_machine_ast1040_evb_class_init(ObjectClass *oc,
+     aspeed_machine_class_init_cpus_defaults(mc);
+ }
+ 
++static void aspeed_machine_ast1080_evb_class_init(ObjectClass *oc,
++                                                  const void *data)
++{
++    MachineClass *mc = MACHINE_CLASS(oc);
++    AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc = "Aspeed AST1080 Platform Root of Trust (Cortex-M4)";
++    amc->soc_name = "ast1080-a0";
++    amc->hw_strap1 = 0;
++    amc->hw_strap2 = 0;
++    mc->init = aspeed_bic_machine_init;
++    amc->i2c_init = ast1040_evb_i2c_init;
++    mc->default_ram_size = 0;
++    amc->macs_mask = 0;
++    amc->uart_default = ASPEED_DEV_UART12;
++    aspeed_machine_class_init_cpus_defaults(mc);
++}
++
+ static const TypeInfo aspeed_ast1040_evb_types[] = {
+     {
+         .name           = MACHINE_TYPE_NAME("ast1040-evb"),
+         .parent         = TYPE_ASPEED_MACHINE,
+         .class_init     = aspeed_machine_ast1040_evb_class_init,
++    },
++    {
++        .name           = MACHINE_TYPE_NAME("ast1080-evb"),
++        .parent         = TYPE_ASPEED_MACHINE,
++        .class_init     = aspeed_machine_ast1080_evb_class_init,
+     }
+ };
+ 
+-- 
+2.53.0
+

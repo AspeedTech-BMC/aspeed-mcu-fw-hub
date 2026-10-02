@@ -1,0 +1,66 @@
+From 65a78a0e522946062b43c2016fe00b7ebc2a550d Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 10:21:41 +0800
+Subject: [PATCH v1 12/30] hw/ssi/aspeed_smc: Fix AST2700 segment end address
+ decoding
+
+The AST2700 Address Decoding Range Registers (SPI030 - SPI03C) define
+the end address as an exclusive upper bound, with a unit of 64KB:
+
+  StartAdr <= CEx < EndAdr
+
+When the start address equals the end address, the decoding is
+disabled.
+
+However, aspeed_2700_smc_segment_to_reg() and
+aspeed_2700_smc_reg_to_segment() treat the end address as inclusive.
+
+The end offset is programmed as (addr + size - 1) and an extra 64KB is
+added back when decoding it. As a result, every segment is 64KB larger
+than the range defined by the register and overlaps the next chip
+select.
+
+The issue can be reproduced by booting an AST2700 ASPEED SDK image
+with "-d guest_errors", which reports a lot of segment overlap errors
+such as:
+
+  aspeed_smc_flash_set_segment: new segment for CS0 is not aligned :
+    [ 0x100000000 - 0x108010000 ]
+  aspeed_smc_flash_overlap: new segment CS1 [ 0x108000000 - 0x110010000 ]
+    overlaps with CS0 [ 0x100000000 - 0x108010000 ]
+
+Fix the segment helpers to use an exclusive end address, so that the
+decoded segments match the definition in the AST2700 datasheet.
+
+Fixes: bdb3748dba30 ("aspeed/smc: Add AST2700 support")
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: Id0597ea0ca4a0c0945754b5262a64d99456d56f7
+---
+ hw/ssi/aspeed_smc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
+index bf596f7b2d..10ea9e5aa0 100644
+--- a/hw/ssi/aspeed_smc.c
++++ b/hw/ssi/aspeed_smc.c
+@@ -1823,7 +1823,7 @@ static uint32_t aspeed_2700_smc_segment_to_reg(const AspeedSMCState *s,
+     }
+ 
+     reg |= (seg->addr & AST2700_SEG_ADDR_MASK) >> 16; /* start offset */
+-    reg |= (seg->addr + seg->size - 1) & AST2700_SEG_ADDR_MASK; /* end offset */
++    reg |= (seg->addr + seg->size) & AST2700_SEG_ADDR_MASK; /* end offset */
+     return reg;
+ }
+ 
+@@ -1836,7 +1836,7 @@ static void aspeed_2700_smc_reg_to_segment(const AspeedSMCState *s,
+ 
+     if (reg) {
+         seg->addr = asc->flash_window_base + start_offset;
+-        seg->size = end_offset + (64 * KiB) - start_offset;
++        seg->size = end_offset - start_offset;
+     } else {
+         seg->addr = asc->flash_window_base;
+         seg->size = 0;
+-- 
+2.53.0
+

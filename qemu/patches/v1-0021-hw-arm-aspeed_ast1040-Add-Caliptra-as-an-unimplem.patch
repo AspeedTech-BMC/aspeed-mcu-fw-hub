@@ -1,0 +1,54 @@
+From a742f7a8866df07ebc272ae13ef8fd50db5b0155 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 16:07:31 +0800
+Subject: [PATCH v1 21/30] hw/arm/aspeed_ast1040: Add Caliptra as an
+ unimplemented device
+
+The AST1040 provides a Caliptra Wrapper at 0x74200000 with
+a size of 1MB, but it is not modeled yet.
+
+Add the Caliptra register region as an unimplemented device to reflect the
+AST1040 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I1f3f111b857c7aa72f699d327eb3c4940c3de206
+---
+ include/hw/arm/aspeed_soc.h | 1 +
+ hw/arm/aspeed_ast1040.c     | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 2d88fda346..fe3e332845 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -197,6 +197,7 @@ enum {
+     ASPEED_DEV_ACRY,
+     ASPEED_DEV_ADC,
+     ASPEED_DEV_ATC,
++    ASPEED_DEV_CALIPTRA,
+     ASPEED_DEV_DP,
+     ASPEED_DEV_DPMCU,
+     ASPEED_DEV_EHCI1,
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 678731f673..5c14d6197e 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -24,6 +24,7 @@ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+     [ASPEED_DEV_SPI1_FILTER]    = 0x74020400,
+     [ASPEED_DEV_PWM]            = 0x740C0000,
+     [ASPEED_DEV_UDC]            = 0x74120000,
++    [ASPEED_DEV_CALIPTRA]       = 0x74200000,
+     [ASPEED_DEV_SRAM0]          = 0x74B80000,
+     [ASPEED_DEV_ADC]            = 0x74C00000,
+     [ASPEED_DEV_JTAG0]          = 0x74C01000,
+@@ -98,6 +99,7 @@ static const AspeedUnimpDevice aspeed_soc_ast1040_unimp_devs[] = {
+     { "otp", "aspeed.otp", ASPEED_DEV_OTP, 0x800 },
+     { "atc", "aspeed.atc", ASPEED_DEV_ATC, 0x100 },
+     { "i3c", "aspeed.i3c", ASPEED_DEV_I3C, 0x8000 },
++    { "caliptra", "aspeed.caliptra", ASPEED_DEV_CALIPTRA, 0x100000 },
+ };
+ QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs) > ASPEED_UNIMP_NUM);
+ 
+-- 
+2.53.0
+

@@ -1,0 +1,54 @@
+From 60633925ff2616619e64115c5ccfe257c0e23c08 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Wed, 30 Sep 2026 14:22:24 +0800
+Subject: [PATCH v1 06/30] hw/arm/aspeed: Remove unused unimplemented device
+ fields
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+All Aspeed SoCs now use the "unimp" array and the AspeedUnimpDevice
+table for their unimplemented devices. Remove the old fields in
+AspeedSoCState and the ASPEED_JTAG_NUM define, which are not used
+anymore.
+
+No functional change.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Change-Id: I9c8fdcc15ad4ee19afa35079ac1cc96930a66ab8
+---
+ include/hw/arm/aspeed_soc.h | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index a9ef4b3550..0ef45561e0 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -59,7 +59,6 @@
+ #define ASPEED_CPUS_NUM  4
+ #define ASPEED_MACS_NUM  4
+ #define ASPEED_UARTS_NUM 13
+-#define ASPEED_JTAG_NUM  2
+ #define ASPEED_PCIE_NUM  3
+ #define ASPEED_INTC_NUM  2
+ #define ASPEED_IOEXP_NUM 2
+@@ -118,15 +117,6 @@ struct AspeedSoCState {
+     AspeedPECIState peci;
+     SerialMM uart[ASPEED_UARTS_NUM];
+     Clock *sysclk;
+-    UnimplementedDeviceState iomem;
+-    UnimplementedDeviceState iomem0;
+-    UnimplementedDeviceState iomem1;
+-    UnimplementedDeviceState video;
+-    UnimplementedDeviceState emmc_boot_controller;
+-    UnimplementedDeviceState dpmcu;
+-    UnimplementedDeviceState espi;
+-    UnimplementedDeviceState udc;
+-    UnimplementedDeviceState jtag[ASPEED_JTAG_NUM];
+     UnimplementedDeviceState unimp[ASPEED_UNIMP_NUM];
+     AspeedAPB2OPBState fsi[2];
+     AspeedLTPIState ltpi_ctrl[ASPEED_IOEXP_NUM];
+-- 
+2.53.0
+

@@ -1,0 +1,39 @@
+From b0ca77d3c5ec7e46ac3d95ff74b706a8f2d97872 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Thu, 24 Sep 2026 09:16:56 +0800
+Subject: [PATCH v1 13/30] hw/block/m25p80: Rename w25q32dw to w25q33pw
+
+The W25Q32DW and W25Q33PW use the same JEDEC ID (0xef6016), but
+have different part names. Since the JEDEC ID is used to uniquely
+identify a flash model in QEMU, both parts cannot be added as separate
+entries with the same ID.
+
+According to Winbond, the W25Q32DW has been end-of-life for many years
+and the W25Q33PW is its next-generation replacement. The W25Q33PW is
+compatible with the W25Q32DW and uses the same JEDEC ID.
+
+Rename the existing w25q32dw model to w25q33pw to reflect the currently
+supported part.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I53d2ff9a37a1fca5a0b2da05ab69108872b7188b
+---
+ hw/block/m25p80.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/block/m25p80.c b/hw/block/m25p80.c
+index 545e0b5728..e88efd913b 100644
+--- a/hw/block/m25p80.c
++++ b/hw/block/m25p80.c
+@@ -353,7 +353,7 @@ static const FlashPartInfo known_devices[] = {
+     { INFO("w25x16",      0xef3015,      0,  64 << 10,  32, ER_4K) },
+     { INFO("w25x32",      0xef3016,      0,  64 << 10,  64, ER_4K) },
+     { INFO("w25q32",      0xef4016,      0,  64 << 10,  64, ER_4K) },
+-    { INFO("w25q32dw",    0xef6016,      0,  64 << 10,  64, ER_4K) },
++    { INFO("w25q33pw",    0xef6016,      0,  64 << 10,  64, ER_4K) },
+     { INFO("w25x64",      0xef3017,      0,  64 << 10, 128, ER_4K) },
+     { INFO("w25q64",      0xef4017,      0,  64 << 10, 128, ER_4K) },
+     { INFO("w25q80",      0xef5014,      0,  64 << 10,  16, ER_4K) },
+-- 
+2.53.0
+

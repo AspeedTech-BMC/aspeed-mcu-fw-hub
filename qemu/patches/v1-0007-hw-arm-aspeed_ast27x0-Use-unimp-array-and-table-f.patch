@@ -1,0 +1,238 @@
+From d1757aa52f7e9dd07443e636afdd1b766654072c Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Wed, 30 Sep 2026 14:33:46 +0800
+Subject: [PATCH v1 07/30] hw/arm/aspeed_ast27x0: Use unimp array and table for
+ unimplemented devices for SSP/TSP
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Before this change, each unimplemented device needed its own field in
+the coprocessor state. This made the code hard to maintain.
+
+Add an "unimp" array in AspeedCoprocessorState for all unimplemented
+devices, and use the AspeedUnimpDevice table to describe them. This
+makes the code easier to maintain and read. Convert AST2700 SSP and
+TSP to use them.
+
+This also fixes a type mismatch. SSP and TSP used the "timerctrl"
+field (AspeedTimerCtrlState) to create an unimplemented device. They
+now use the "unimp" array instead.
+
+No functional change.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@oss.qualcomm.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Change-Id: I6e4376cf02cd07bff705f71da358314283799ab0
+---
+ include/hw/arm/aspeed_coprocessor.h |  1 +
+ hw/arm/aspeed_ast27x0-ssp.c         | 56 ++++++++++++++---------------
+ hw/arm/aspeed_ast27x0-tsp.c         | 56 ++++++++++++++---------------
+ 3 files changed, 53 insertions(+), 60 deletions(-)
+
+diff --git a/include/hw/arm/aspeed_coprocessor.h b/include/hw/arm/aspeed_coprocessor.h
+index acb8b06457..29b66cc810 100644
+--- a/include/hw/arm/aspeed_coprocessor.h
++++ b/include/hw/arm/aspeed_coprocessor.h
+@@ -23,6 +23,7 @@ struct AspeedCoprocessorState {
+     Clock *sysclk;
+ 
+     AspeedTimerCtrlState timerctrl;
++    UnimplementedDeviceState unimp[ASPEED_UNIMP_NUM];
+     SerialMM *uart;
+     int uart_dev;
+ };
+diff --git a/hw/arm/aspeed_ast27x0-ssp.c b/hw/arm/aspeed_ast27x0-ssp.c
+index e03653086c..b448a29665 100644
+--- a/hw/arm/aspeed_ast27x0-ssp.c
++++ b/hw/arm/aspeed_ast27x0-ssp.c
+@@ -101,6 +101,17 @@ static struct nvic_intc_irq_info ast2700_ssp_intcmap[] = {
+     {169, 1, 9, NULL},
+ };
+ 
++static const AspeedUnimpDevice aspeed_soc_ast27x0ssp_unimp_devs[] = {
++    { "timerctrl", "aspeed.timerctrl", ASPEED_DEV_TIMER1, 0x200 },
++    { "ipc0",      "aspeed.ipc0",      ASPEED_DEV_IPC0,   0x1000 },
++    { "ipc1",      "aspeed.ipc1",      ASPEED_DEV_IPC1,   0x1000 },
++    { "pric0",     "aspeed.pric0",     ASPEED_DEV_PRIC0,  0x1000 },
++    { "pric1",     "aspeed.pric1",     ASPEED_DEV_PRIC1,  0x1000 },
++    { "otp",       "aspeed.otp",       ASPEED_DEV_OTP,    0x800 },
++};
++QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast27x0ssp_unimp_devs) >
++                  ASPEED_UNIMP_NUM);
++
+ static qemu_irq aspeed_soc_ast27x0ssp_get_irq(AspeedCoprocessorState *s,
+                                               int dev)
+ {
+@@ -128,6 +139,7 @@ static void aspeed_soc_ast27x0ssp_init(Object *obj)
+ {
+     Aspeed27x0CoprocessorState *a = ASPEED27X0SSP_COPROCESSOR(obj);
+     AspeedCoprocessorState *s = ASPEED_COPROCESSOR(obj);
++    int i;
+ 
+     object_initialize_child(obj, "armv7m", &a->armv7m, TYPE_ARMV7M);
+     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
+@@ -137,18 +149,11 @@ static void aspeed_soc_ast27x0ssp_init(Object *obj)
+     object_initialize_child(obj, "intc1", &a->intc[1],
+                             TYPE_ASPEED_2700SSP_INTCIO);
+ 
+-    object_initialize_child(obj, "timerctrl", &s->timerctrl,
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "ipc0", &a->ipc[0],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "ipc1", &a->ipc[1],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "pric0", &a->pric[0],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "pric1", &a->pric[1],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "otp", &a->otp,
+-                            TYPE_UNIMPLEMENTED_DEVICE);
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast27x0ssp_unimp_devs); i++) {
++        object_initialize_child(obj,
++                                aspeed_soc_ast27x0ssp_unimp_devs[i].qom_name,
++                                &s->unimp[i], TYPE_UNIMPLEMENTED_DEVICE);
++    }
+ }
+ 
+ static void aspeed_soc_ast27x0ssp_realize(DeviceState *dev_soc, Error **errp)
+@@ -159,6 +164,7 @@ static void aspeed_soc_ast27x0ssp_realize(DeviceState *dev_soc, Error **errp)
+     DeviceState *armv7m;
+     MemoryRegion *mr;
+     g_autofree char *sdram_name = NULL;
++    const AspeedUnimpDevice *unimp;
+     int i;
+ 
+     if (!clock_has_source(s->sysclk)) {
+@@ -283,24 +289,14 @@ static void aspeed_soc_ast27x0ssp_realize(DeviceState *dev_soc, Error **errp)
+     memory_region_add_subregion(s->memory, sc->memmap[ASPEED_DEV_FMC],
+                                 &a->fmc_alias);
+ 
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->timerctrl),
+-                                  "aspeed.timerctrl",
+-                                  sc->memmap[ASPEED_DEV_TIMER1], 0x200);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->ipc[0]),
+-                                  "aspeed.ipc0",
+-                                  sc->memmap[ASPEED_DEV_IPC0], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->ipc[1]),
+-                                  "aspeed.ipc1",
+-                                  sc->memmap[ASPEED_DEV_IPC1], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->pric[0]),
+-                                  "aspeed.pric0",
+-                                  sc->memmap[ASPEED_DEV_PRIC0], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->pric[1]),
+-                                  "aspeed.pric1",
+-                                  sc->memmap[ASPEED_DEV_PRIC1], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->otp),
+-                                  "aspeed.otp",
+-                                  sc->memmap[ASPEED_DEV_OTP], 0x800);
++    /* Unimplemented devices */
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast27x0ssp_unimp_devs); i++) {
++        unimp = &aspeed_soc_ast27x0ssp_unimp_devs[i];
++        aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->unimp[i]),
++                                      unimp->region_name,
++                                      sc->memmap[unimp->memmap_idx],
++                                      unimp->size);
++    }
+ }
+ 
+ static const Property aspeed_27x0_coprocessor_properties[] = {
+diff --git a/hw/arm/aspeed_ast27x0-tsp.c b/hw/arm/aspeed_ast27x0-tsp.c
+index 39ba062a20..32b57f9363 100644
+--- a/hw/arm/aspeed_ast27x0-tsp.c
++++ b/hw/arm/aspeed_ast27x0-tsp.c
+@@ -101,6 +101,17 @@ static struct nvic_intc_irq_info ast2700_tsp_intcmap[] = {
+     {169, 1, 9, NULL},
+ };
+ 
++static const AspeedUnimpDevice aspeed_soc_ast27x0tsp_unimp_devs[] = {
++    { "timerctrl", "aspeed.timerctrl", ASPEED_DEV_TIMER1, 0x200 },
++    { "ipc0",      "aspeed.ipc0",      ASPEED_DEV_IPC0,   0x1000 },
++    { "ipc1",      "aspeed.ipc1",      ASPEED_DEV_IPC1,   0x1000 },
++    { "pric0",     "aspeed.pric0",     ASPEED_DEV_PRIC0,  0x1000 },
++    { "pric1",     "aspeed.pric1",     ASPEED_DEV_PRIC1,  0x1000 },
++    { "otp",       "aspeed.otp",       ASPEED_DEV_OTP,    0x800 },
++};
++QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast27x0tsp_unimp_devs) >
++                  ASPEED_UNIMP_NUM);
++
+ static qemu_irq aspeed_soc_ast27x0tsp_get_irq(AspeedCoprocessorState *s,
+                                               int dev)
+ {
+@@ -128,6 +139,7 @@ static void aspeed_soc_ast27x0tsp_init(Object *obj)
+ {
+     Aspeed27x0CoprocessorState *a = ASPEED27X0TSP_COPROCESSOR(obj);
+     AspeedCoprocessorState *s = ASPEED_COPROCESSOR(obj);
++    int i;
+ 
+     object_initialize_child(obj, "armv7m", &a->armv7m, TYPE_ARMV7M);
+     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
+@@ -137,18 +149,11 @@ static void aspeed_soc_ast27x0tsp_init(Object *obj)
+     object_initialize_child(obj, "intc1", &a->intc[1],
+                             TYPE_ASPEED_2700TSP_INTCIO);
+ 
+-    object_initialize_child(obj, "timerctrl", &s->timerctrl,
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "ipc0", &a->ipc[0],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "ipc1", &a->ipc[1],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "pric0", &a->pric[0],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "pric1", &a->pric[1],
+-                            TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "otp", &a->otp,
+-                            TYPE_UNIMPLEMENTED_DEVICE);
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast27x0tsp_unimp_devs); i++) {
++        object_initialize_child(obj,
++                                aspeed_soc_ast27x0tsp_unimp_devs[i].qom_name,
++                                &s->unimp[i], TYPE_UNIMPLEMENTED_DEVICE);
++    }
+ }
+ 
+ static void aspeed_soc_ast27x0tsp_realize(DeviceState *dev_soc, Error **errp)
+@@ -159,6 +164,7 @@ static void aspeed_soc_ast27x0tsp_realize(DeviceState *dev_soc, Error **errp)
+     DeviceState *armv7m;
+     MemoryRegion *mr;
+     g_autofree char *sdram_name = NULL;
++    const AspeedUnimpDevice *unimp;
+     int i;
+ 
+     if (!clock_has_source(s->sysclk)) {
+@@ -283,24 +289,14 @@ static void aspeed_soc_ast27x0tsp_realize(DeviceState *dev_soc, Error **errp)
+     memory_region_add_subregion(s->memory, sc->memmap[ASPEED_DEV_FMC],
+                                 &a->fmc_alias);
+ 
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->timerctrl),
+-                                  "aspeed.timerctrl",
+-                                  sc->memmap[ASPEED_DEV_TIMER1], 0x200);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->ipc[0]),
+-                                  "aspeed.ipc0",
+-                                  sc->memmap[ASPEED_DEV_IPC0], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->ipc[1]),
+-                                  "aspeed.ipc1",
+-                                  sc->memmap[ASPEED_DEV_IPC1], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->pric[0]),
+-                                  "aspeed.pric0",
+-                                  sc->memmap[ASPEED_DEV_PRIC0], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->pric[1]),
+-                                  "aspeed.pric1",
+-                                  sc->memmap[ASPEED_DEV_PRIC1], 0x1000);
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&a->otp),
+-                                  "aspeed.otp",
+-                                  sc->memmap[ASPEED_DEV_OTP], 0x800);
++    /* Unimplemented devices */
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast27x0tsp_unimp_devs); i++) {
++        unimp = &aspeed_soc_ast27x0tsp_unimp_devs[i];
++        aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->unimp[i]),
++                                      unimp->region_name,
++                                      sc->memmap[unimp->memmap_idx],
++                                      unimp->size);
++    }
+ }
+ 
+ static const Property aspeed_27x0_coprocessor_properties[] = {
+-- 
+2.53.0
+

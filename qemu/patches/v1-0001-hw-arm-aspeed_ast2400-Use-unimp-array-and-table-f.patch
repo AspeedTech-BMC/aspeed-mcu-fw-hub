@@ -1,0 +1,131 @@
+From a1fecd65adc2bf98ffcaf6e755902384d9feedb9 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Wed, 30 Sep 2026 13:46:16 +0800
+Subject: [PATCH v1 01/30] hw/arm/aspeed_ast2400: Use unimp array and table for
+ unimplemented devices
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Before this change, each unimplemented device needed its own field in
+AspeedSoCState. This made the variable names confusing. For example,
+AspeedSoCState has "udc" as an unimplemented device, but
+Aspeed2600SoCState also has "udc" as the real UDC model.
+
+Add an "unimp" array in AspeedSoCState for all unimplemented devices,
+and add an AspeedUnimpDevice table to describe them. This makes the
+code easier to maintain and read. Convert AST2400/AST2500 to use them.
+
+No functional change.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@oss.qualcomm.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Change-Id: I603e1eb942d7259b76e67a86d5bfbc55bd9ea9de
+---
+ include/hw/arm/aspeed_soc.h |  9 +++++++++
+ hw/arm/aspeed_ast2400.c     | 33 +++++++++++++++++++--------------
+ 2 files changed, 28 insertions(+), 14 deletions(-)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index 38226d9b80..a9ef4b3550 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -64,6 +64,14 @@
+ #define ASPEED_INTC_NUM  2
+ #define ASPEED_IOEXP_NUM 2
+ #define ASPEED_SRAM_NUM 2
++#define ASPEED_UNIMP_NUM 10
++
++typedef struct AspeedUnimpDevice {
++    const char *qom_name;
++    const char *region_name;
++    int memmap_idx;
++    uint64_t size;
++} AspeedUnimpDevice;
+ 
+ struct AspeedSoCState {
+     DeviceState parent;
+@@ -119,6 +127,7 @@ struct AspeedSoCState {
+     UnimplementedDeviceState espi;
+     UnimplementedDeviceState udc;
+     UnimplementedDeviceState jtag[ASPEED_JTAG_NUM];
++    UnimplementedDeviceState unimp[ASPEED_UNIMP_NUM];
+     AspeedAPB2OPBState fsi[2];
+     AspeedLTPIState ltpi_ctrl[ASPEED_IOEXP_NUM];
+     AspeedAST1700SoCState ioexp[ASPEED_IOEXP_NUM];
+diff --git a/hw/arm/aspeed_ast2400.c b/hw/arm/aspeed_ast2400.c
+index 79a653f65f..3bd9df4e09 100644
+--- a/hw/arm/aspeed_ast2400.c
++++ b/hw/arm/aspeed_ast2400.c
+@@ -23,8 +23,6 @@
+ #include "system/system.h"
+ #include "target/arm/cpu-qom.h"
+ 
+-#define ASPEED_SOC_IOMEM_SIZE       0x00200000
+-
+ static const hwaddr aspeed_soc_ast2400_memmap[] = {
+     [ASPEED_DEV_SPI_BOOT]  = 0x00000000,
+     [ASPEED_DEV_IOMEM]  = 0x1E600000,
+@@ -134,6 +132,12 @@ static const int aspeed_soc_ast2400_irqmap[] = {
+ 
+ #define aspeed_soc_ast2500_irqmap aspeed_soc_ast2400_irqmap
+ 
++static const AspeedUnimpDevice aspeed_soc_ast2400_unimp_devs[] = {
++    { "iomem", "aspeed.io",    ASPEED_DEV_IOMEM, 0x00200000 },
++    { "video", "aspeed.video", ASPEED_DEV_VIDEO, 0x1000 },
++};
++QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast2400_unimp_devs) > ASPEED_UNIMP_NUM);
++
+ static qemu_irq aspeed_soc_ast2400_get_irq(AspeedSoCState *s, int dev)
+ {
+     Aspeed2400SoCState *a = ASPEED2400_SOC(s);
+@@ -240,8 +244,10 @@ static void aspeed_ast2400_soc_init(Object *obj)
+     snprintf(typename, sizeof(typename), "aspeed.hace-%s", socname);
+     object_initialize_child(obj, "hace", &s->hace, typename);
+ 
+-    object_initialize_child(obj, "iomem", &s->iomem, TYPE_UNIMPLEMENTED_DEVICE);
+-    object_initialize_child(obj, "video", &s->video, TYPE_UNIMPLEMENTED_DEVICE);
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast2400_unimp_devs); i++) {
++        object_initialize_child(obj, aspeed_soc_ast2400_unimp_devs[i].qom_name,
++                                &s->unimp[i], TYPE_UNIMPLEMENTED_DEVICE);
++    }
+ }
+ 
+ static void aspeed_ast2400_soc_realize(DeviceState *dev, Error **errp)
+@@ -251,6 +257,7 @@ static void aspeed_ast2400_soc_realize(DeviceState *dev, Error **errp)
+     AspeedSoCState *s = ASPEED_SOC(dev);
+     AspeedSoCClass *sc = ASPEED_SOC_GET_CLASS(s);
+     g_autofree char *sram_name = NULL;
++    const AspeedUnimpDevice *unimp;
+     int uart;
+ 
+     /* Default boot region (SPI memory or ROMs) */
+@@ -259,16 +266,14 @@ static void aspeed_ast2400_soc_realize(DeviceState *dev, Error **errp)
+     memory_region_add_subregion(s->memory, sc->memmap[ASPEED_DEV_SPI_BOOT],
+                                 &s->spi_boot_container);
+ 
+-    /* IO space */
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->iomem),
+-                                  "aspeed.io",
+-                                  sc->memmap[ASPEED_DEV_IOMEM],
+-                                  ASPEED_SOC_IOMEM_SIZE);
+-
+-    /* Video engine stub */
+-    aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->video),
+-                                  "aspeed.video",
+-                                  sc->memmap[ASPEED_DEV_VIDEO], 0x1000);
++    /* Unimplemented devices */
++    for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast2400_unimp_devs); i++) {
++        unimp = &aspeed_soc_ast2400_unimp_devs[i];
++        aspeed_mmio_map_unimplemented(s->memory, SYS_BUS_DEVICE(&s->unimp[i]),
++                                      unimp->region_name,
++                                      sc->memmap[unimp->memmap_idx],
++                                      unimp->size);
++    }
+ 
+     /* CPU */
+     for (i = 0; i < sc->num_cpus; i++) {
+-- 
+2.53.0
+

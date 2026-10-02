@@ -1,0 +1,45 @@
+From 6de43efcb625cfae4178366a57d6e21749a67387 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 12:52:02 +0800
+Subject: [PATCH v1 25/30] hw/misc/aspeed_scu: Add AST1080 A0 silicon revision
+ definition
+
+Add a new silicon revision constant AST1080_A0_SILICON_REV for the
+AST1080 SoC. This allows the SCU model and related SoC layers to
+identify and handle AST1080 A0 revision properly in the same way as
+other Aspeed SoC families.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I9ba8306a8e1f6a49846f5a396741a33961c33c7e
+---
+ include/hw/misc/aspeed_scu.h | 1 +
+ hw/misc/aspeed_scu.c         | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/include/hw/misc/aspeed_scu.h b/include/hw/misc/aspeed_scu.h
+index 904549465f..9dc6610de0 100644
+--- a/include/hw/misc/aspeed_scu.h
++++ b/include/hw/misc/aspeed_scu.h
+@@ -52,6 +52,7 @@ struct Aspeed2700SCUState {
+ #define AST1030_A1_SILICON_REV   0x80010000U
+ #define AST1060_A2_SILICON_REV   0xA0030000U
+ #define AST1040_A0_SILICON_REV   0x81000000U
++#define AST1080_A0_SILICON_REV   0xA1000000U
+ #define AST2700_A1_SILICON_REV   0x06010103U
+ #define AST2700_A2_SILICON_REV   0x06020103U
+ 
+diff --git a/hw/misc/aspeed_scu.c b/hw/misc/aspeed_scu.c
+index 77f9af2ae5..df26dd0ef4 100644
+--- a/hw/misc/aspeed_scu.c
++++ b/hw/misc/aspeed_scu.c
+@@ -572,6 +572,7 @@ static uint32_t aspeed_silicon_revs[] = {
+     AST2700_A1_SILICON_REV,
+     AST2700_A2_SILICON_REV,
+     AST1040_A0_SILICON_REV,
++    AST1080_A0_SILICON_REV,
+ };
+ 
+ bool is_supported_silicon_rev(uint32_t silicon_rev)
+-- 
+2.53.0
+

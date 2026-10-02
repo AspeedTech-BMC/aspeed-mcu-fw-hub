@@ -15,13 +15,6 @@ qemu_build(
 
 exports_files(["run_qemu.sh"])
 
-# bazel run //qemu:ast1040a0_evb / :ast1080a0_evb / :ast1080a0_dcscm_bhs / :ast1080a0_dcscm_oks
-# All three run on "ast1040-evb" (needs the machine model patch under
-# qemu/patches/ — AST1080 has no machine model of its own, it's
-# register-compatible with AST1040). Each boots two ways at once: -kernel
-# loads the Zephyr CM4 firmware directly, and internal_flash_image is
-# mounted as a writable w25q33pw SPI-NOR chip (see run_qemu.sh) so guest
-# firmware can actually read/write flash without touching the build output.
 qemu_run(
     name = "ast1040a0_evb",
     qemu = ":dist",
@@ -40,7 +33,7 @@ qemu_run(
     name = "ast1080a0_evb",
     qemu = ":dist",
     kernel = "//ast1080/ast1080a0/evb:cm4",
-    machine = "ast1040-evb",
+    machine = "ast1080-evb",
     internal_flash_image = "//ast1080/ast1080a0/evb:image",
     external_option = [
         "-blockdev",
@@ -54,7 +47,7 @@ qemu_run(
     name = "ast1080a0_dcscm_bhs",
     qemu = ":dist",
     kernel = "//ast1080/ast1080a0/dcscm:cm4_bhs",
-    machine = "ast1040-evb",
+    machine = "ast1080-evb",
     internal_flash_image = "//ast1080/ast1080a0/dcscm:image_bhs",
     external_option = [
         "-blockdev",
@@ -68,7 +61,7 @@ qemu_run(
     name = "ast1080a0_dcscm_oks",
     qemu = ":dist",
     kernel = "//ast1080/ast1080a0/dcscm:cm4_oks",
-    machine = "ast1040-evb",
+    machine = "ast1080-evb",
     internal_flash_image = "//ast1080/ast1080a0/dcscm:image_oks",
     external_option = [
         "-blockdev",

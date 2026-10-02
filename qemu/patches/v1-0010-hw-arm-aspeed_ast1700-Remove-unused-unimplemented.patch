@@ -1,0 +1,37 @@
+From 88d690ec25d74226db02217150414b1f09c5ac11 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Wed, 30 Sep 2026 14:55:03 +0800
+Subject: [PATCH v1 10/30] hw/arm/aspeed_ast1700: Remove unused unimplemented
+ device field
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+AST1700 now uses the "unimp" array and the AspeedUnimpDevice table for
+its unimplemented devices. Remove the old "i3c" field in
+AspeedAST1700SoCState, which is not used anymore.
+
+No functional change.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Change-Id: I96ea0068d20ab2d784e9ea04e7f8c1b58379f6f5
+---
+ include/hw/arm/aspeed_ast1700.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/hw/arm/aspeed_ast1700.h b/include/hw/arm/aspeed_ast1700.h
+index ed9b45e202..015d1c51db 100644
+--- a/include/hw/arm/aspeed_ast1700.h
++++ b/include/hw/arm/aspeed_ast1700.h
+@@ -49,7 +49,6 @@ struct AspeedAST1700SoCState {
+     AspeedPWMState pwm;
+     AspeedWDTState wdt[AST1700_WDT_NUM];
+ 
+-    UnimplementedDeviceState i3c;
+     UnimplementedDeviceState unimp[AST1700_UNIMP_NUM];
+ };
+ 
+-- 
+2.53.0
+

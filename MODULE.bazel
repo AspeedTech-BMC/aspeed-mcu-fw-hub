@@ -100,11 +100,38 @@ _git_repo = use_repo_rule(
 # QEMU_COMMIT to move to a different upstream revision; add patch labels to
 # QEMU_PATCHES as they are added under qemu/patches/.
 QEMU_REMOTE = "https://github.com/qemu/qemu.git"
-QEMU_COMMIT = "5ef0ecc5942ee07bb581cc96a97bbfc0fdf4005c"
+QEMU_COMMIT = "7074591d7954876951f84c15b994a43251d5a3c1"
 QEMU_PATCHES = [
-    "//qemu:patches/0001-hw-arm-aspeed_ast1040-Support-FMC-stub-SPI-ast1080.patch",
-    "//qemu:patches/v1-0002-hw-arm-aspeed_ast1040-Add-unimplemented-swmbx-stub.patch",
-    "//qemu:patches/v1-0003-hw-arm-aspeed_ast1040-Add-unimplemented-i3c-stub.patch",
+    "//qemu:patches/v1-0001-hw-arm-aspeed_ast2400-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0002-hw-arm-aspeed_ast2600-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0003-hw-arm-aspeed_ast27x0-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0004-hw-arm-aspeed_ast10x0-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0005-hw-arm-aspeed_ast1040-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0006-hw-arm-aspeed-Remove-unused-unimplemented-device-.patch",
+    "//qemu:patches/v1-0007-hw-arm-aspeed_ast27x0-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0008-hw-arm-aspeed_coprocessor-Remove-unused-unimpleme.patch",
+    "//qemu:patches/v1-0009-hw-arm-aspeed_ast1700-Use-unimp-array-and-table-f.patch",
+    "//qemu:patches/v1-0010-hw-arm-aspeed_ast1700-Remove-unused-unimplemented.patch",
+    "//qemu:patches/v1-0011-hw-arm-aspeed-Sort-device-IDs-alphabetically.patch",
+    "//qemu:patches/v1-0012-hw-ssi-aspeed_smc-Fix-AST2700-segment-end-address.patch",
+    "//qemu:patches/v1-0013-hw-block-m25p80-Rename-w25q32dw-to-w25q33pw.patch",
+    "//qemu:patches/v1-0014-hw-block-m25p80-Add-SFDP-table-for-Winbond-W25Q33.patch",
+    "//qemu:patches/v1-0015-hw-ssi-aspeed_smc-Add-AST1040-FMC-and-SPI-control.patch",
+    "//qemu:patches/v1-0016-hw-arm-aspeed_ast1040-Add-FMC-and-SPI-controllers.patch",
+    "//qemu:patches/v1-0017-hw-arm-aspeed_ast1040-Add-FMC-and-SPI-filters-as-.patch",
+    "//qemu:patches/v1-0018-hw-arm-aspeed_ast1040-Add-OTP-as-an-unimplemented.patch",
+    "//qemu:patches/v1-0019-hw-arm-aspeed_ast1040-Add-Anti-Tamper-Controller-.patch",
+    "//qemu:patches/v1-0020-hw-arm-aspeed_ast1040-Add-I3C-as-an-unimplemented.patch",
+    "//qemu:patches/v1-0021-hw-arm-aspeed_ast1040-Add-Caliptra-as-an-unimplem.patch",
+    "//qemu:patches/v1-0022-tests-qtest-aspeed_smc-Add-AST1040-SMC-tests.patch",
+    "//qemu:patches/v1-0023-hw-arm-aspeed_ast1040-Add-common-init-function-fo.patch",
+    "//qemu:patches/v1-0024-hw-arm-aspeed_ast1040-Add-common-realize-function.patch",
+    "//qemu:patches/v1-0025-hw-misc-aspeed_scu-Add-AST1080-A0-silicon-revisio.patch",
+    "//qemu:patches/v1-0026-hw-arm-aspeed_ast1040-Add-AST1080-SoC-support.patch",
+    "//qemu:patches/v1-0027-hw-arm-aspeed_ast1040-Add-AST1080-QSPI-filters-as.patch",
+    "//qemu:patches/v1-0028-hw-arm-aspeed_ast1040-Add-AST1080-I2C-filter-as-a.patch",
+    "//qemu:patches/v1-0029-hw-arm-aspeed_ast1040_evb-Add-AST1080-EVB-machine.patch",
+    "//qemu:patches/v1-0030-docs-system-arm-aspeed-Add-AST1080-Platform-Root-.patch",
 ]
 
 _git_repo(

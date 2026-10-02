@@ -1,0 +1,41 @@
+From 413be03a00c7981880d7faaa89a319057d6dd9cf Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Thu, 24 Sep 2026 15:21:08 +0800
+Subject: [PATCH v1 18/30] hw/arm/aspeed_ast1040: Add OTP as an unimplemented
+ device
+
+The AST1040 provides an OTP controller at 0x74c07000, but the controller
+is not modeled yet.
+
+Add the OTP register region as an unimplemented device to reflect the
+AST1040 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I76687754f59805dbd36498bc04cb403eea83f8db
+---
+ hw/arm/aspeed_ast1040.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index d297481170..406a68f81f 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -29,6 +29,7 @@ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+     [ASPEED_DEV_JTAG0]          = 0x74C01000,
+     [ASPEED_DEV_SCU]            = 0x74C02000,
+     [ASPEED_DEV_ESPI]           = 0x74C05000,
++    [ASPEED_DEV_OTP]            = 0x74C07000,
+     [ASPEED_DEV_JTAG1]          = 0x74C09000,
+     [ASPEED_DEV_GPIO]           = 0x74C0B000,
+     [ASPEED_DEV_SGPIOM0]        = 0x74C0C000,
+@@ -93,6 +94,7 @@ static const AspeedUnimpDevice aspeed_soc_ast1040_unimp_devs[] = {
+     { "fmc-filter",  "aspeed.fmc-filter",  ASPEED_DEV_FMC_FILTER,  0x1000 },
+     { "spi0-filter", "aspeed.spi0-filter", ASPEED_DEV_SPI0_FILTER, 0x1000 },
+     { "spi1-filter", "aspeed.spi1-filter", ASPEED_DEV_SPI1_FILTER, 0x1000 },
++    { "otp", "aspeed.otp", ASPEED_DEV_OTP, 0x800 },
+ };
+ QEMU_BUILD_BUG_ON(ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs) > ASPEED_UNIMP_NUM);
+ 
+-- 
+2.53.0
+

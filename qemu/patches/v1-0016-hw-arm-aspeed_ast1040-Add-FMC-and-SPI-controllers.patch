@@ -1,0 +1,91 @@
+From 8cb0f972c3761c5d948bf5fc7e8f5fee5756b984 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Thu, 24 Sep 2026 10:39:13 +0800
+Subject: [PATCH v1 16/30] hw/arm/aspeed_ast1040: Add FMC and SPI controllers
+
+Add the FMC, SPI0 and SPI1 controllers to the AST1040 SoC. Map their
+register and flash memory regions, connect their interrupts, and link
+the DMA DRAM region to internal Hyper RAM.
+
+The AST1040 supports two SPI controllers, SPI0 and SPI1.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I7eb623fb0bbb6b543b7ba76cba73151f5dea6fe3
+---
+ hw/arm/aspeed_ast1040.c | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index f7d94bc671..5f990f4834 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -103,7 +103,9 @@ static void aspeed_soc_ast1040_init(Object *obj)
+     Aspeed10x0SoCState *a = ASPEED10X0_SOC(obj);
+     AspeedSoCState *s = ASPEED_SOC(obj);
+     AspeedSoCClass *sc = ASPEED_SOC_GET_CLASS(s);
++    char typename[64];
+     int i;
++
+     object_initialize_child(obj, "armv7m", &a->armv7m, TYPE_ARMV7M);
+ 
+     s->sysclk = qdev_init_clock_in(DEVICE(s), "sysclk", NULL, NULL, 0);
+@@ -133,6 +135,13 @@ static void aspeed_soc_ast1040_init(Object *obj)
+                                 "aspeed.wdt-ast2700");
+     }
+ 
++    object_initialize_child(obj, "fmc", &s->fmc, "aspeed.fmc-ast1040");
++
++    for (i = 0; i < sc->spis_num; i++) {
++        snprintf(typename, sizeof(typename), "aspeed.spi%d-ast1040", i);
++        object_initialize_child(obj, "spi[*]", &s->spi[i], typename);
++    }
++
+     for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs); i++) {
+         object_initialize_child(obj, aspeed_soc_ast1040_unimp_devs[i].qom_name,
+                                 &s->unimp[i], TYPE_UNIMPLEMENTED_DEVICE);
+@@ -274,6 +283,34 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+         aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->wdt[i]), 0, wdt_offset);
+     }
+ 
++    /* FMC, The number of CS is set at the board level */
++    object_property_set_link(OBJECT(&s->fmc), "dram", OBJECT(&s->sram[1]),
++            &error_abort);
++    if (!sysbus_realize(SYS_BUS_DEVICE(&s->fmc), errp)) {
++        return;
++    }
++    aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->fmc), 0,
++                    sc->memmap[ASPEED_DEV_FMC]);
++    aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->fmc), 1,
++                    ASPEED_SMC_GET_CLASS(&s->fmc)->flash_window_base);
++    sysbus_connect_irq(SYS_BUS_DEVICE(&s->fmc), 0,
++                       aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_FMC));
++
++    /* SPI */
++    for (i = 0; i < sc->spis_num; i++) {
++        object_property_set_link(OBJECT(&s->spi[i]), "dram",
++                                 OBJECT(&s->sram[1]), &error_abort);
++        if (!sysbus_realize(SYS_BUS_DEVICE(&s->spi[i]), errp)) {
++            return;
++        }
++        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 0,
++                        sc->memmap[ASPEED_DEV_SPI0 + i]);
++        aspeed_mmio_map(s->memory, SYS_BUS_DEVICE(&s->spi[i]), 1,
++                        ASPEED_SMC_GET_CLASS(&s->spi[i])->flash_window_base);
++        sysbus_connect_irq(SYS_BUS_DEVICE(&s->spi[i]), 0,
++                           aspeed_soc_ast1040_get_irq(s, ASPEED_DEV_SPI0 + i));
++    }
++
+     /* Unimplemented devices */
+     for (i = 0; i < ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs); i++) {
+         unimp = &aspeed_soc_ast1040_unimp_devs[i];
+@@ -304,6 +341,7 @@ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+     sc->uarts_num       = 13;
+     sc->sgpio_num       = 2;
+     sc->wdts_num        = 8;
++    sc->spis_num        = 2;
+     sc->uarts_base      = ASPEED_DEV_UART0;
+     sc->irqmap          = aspeed_soc_ast1040_irqmap;
+     sc->memmap          = aspeed_soc_ast1040_memmap;
+-- 
+2.53.0
+

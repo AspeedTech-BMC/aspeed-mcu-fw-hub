@@ -1,0 +1,48 @@
+From 8e571ed82b6271cf2adc3f4a3533c7f0eba2c7a7 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Wed, 30 Sep 2026 14:34:39 +0800
+Subject: [PATCH v1 08/30] hw/arm/aspeed_coprocessor: Remove unused
+ unimplemented device fields
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+AST2700 SSP and TSP now use the "unimp" array and the AspeedUnimpDevice
+table for their unimplemented devices. Remove the old "ipc", "pric" and
+"otp" fields in Aspeed27x0CoprocessorState and the "timerctrl" field in
+AspeedCoprocessorState, which are not used anymore.
+
+No functional change.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
+Change-Id: Ia590b7e03eed136646a4375f70a1f1750fe215e1
+---
+ include/hw/arm/aspeed_coprocessor.h | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/include/hw/arm/aspeed_coprocessor.h b/include/hw/arm/aspeed_coprocessor.h
+index 29b66cc810..fe1f576874 100644
+--- a/include/hw/arm/aspeed_coprocessor.h
++++ b/include/hw/arm/aspeed_coprocessor.h
+@@ -22,7 +22,6 @@ struct AspeedCoprocessorState {
+     MemoryRegion uart_alias;
+     Clock *sysclk;
+ 
+-    AspeedTimerCtrlState timerctrl;
+     UnimplementedDeviceState unimp[ASPEED_UNIMP_NUM];
+     SerialMM *uart;
+     int uart_dev;
+@@ -44,9 +43,6 @@ struct AspeedCoprocessorClass {
+ struct Aspeed27x0CoprocessorState {
+     AspeedCoprocessorState parent;
+     AspeedINTCState intc[2];
+-    UnimplementedDeviceState ipc[2];
+-    UnimplementedDeviceState pric[2];
+-    UnimplementedDeviceState otp;
+ 
+     ARMv7MState armv7m;
+ 
+-- 
+2.53.0
+

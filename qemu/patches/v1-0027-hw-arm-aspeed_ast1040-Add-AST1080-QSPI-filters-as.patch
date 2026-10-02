@@ -1,0 +1,117 @@
+From 6a7bc9bfdf04a85b749f9aff66555983db97b4a7 Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 14:45:43 +0800
+Subject: [PATCH v1 27/30] hw/arm/aspeed_ast1040: Add AST1080 QSPI filters as
+ unimplemented device
+
+The AST1080 provides three QSPI Filter Controllers (SPI monitors) at
+the following addresses:
+
+  QSPI filter #0: 0x74c15000
+  QSPI filter #1: 0x74c16000
+  QSPI filter #2: 0x74c17000
+
+These controllers are only available on the AST1080. The AST1040 does
+not have them, so they are added to the AST1080 specific init and
+realize functions instead of the common AST10x0 G2 ones.
+
+The controllers are not modeled yet. Add the register regions as
+unimplemented devices to reflect the AST1080 memory map.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: Iffb665e5f101a27ab3e607dfaa9fbd6e25156d91
+---
+ include/hw/arm/aspeed_soc.h |  3 +++
+ hw/arm/aspeed_ast1040.c     | 36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
+
+diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
+index fe3e332845..1d4acce310 100644
+--- a/include/hw/arm/aspeed_soc.h
++++ b/include/hw/arm/aspeed_soc.h
+@@ -277,6 +277,9 @@ enum {
+     ASPEED_DEV_SPI2,
+     ASPEED_DEV_SPI0_FILTER,
+     ASPEED_DEV_SPI1_FILTER,
++    ASPEED_DEV_SPIM0,
++    ASPEED_DEV_SPIM1,
++    ASPEED_DEV_SPIM2,
+     ASPEED_DEV_SRAM0,
+     ASPEED_DEV_SRAM1,
+     ASPEED_DEV_TIMER1,
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index d3df725948..6b6aa4a145 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -36,6 +36,10 @@ static const hwaddr aspeed_soc_ast1040_memmap[] = {
+     [ASPEED_DEV_SGPIOM0]        = 0x74C0C000,
+     [ASPEED_DEV_SGPIOM1]        = 0x74C0D000,
+     [ASPEED_DEV_I2C]            = 0x74C0F000,
++    /* SPIM0 - SPIM2: AST1080 only */
++    [ASPEED_DEV_SPIM0]          = 0x74C15000,
++    [ASPEED_DEV_SPIM1]          = 0x74C16000,
++    [ASPEED_DEV_SPIM2]          = 0x74C17000,
+     [ASPEED_DEV_PECI]           = 0x74C1F000,
+     [ASPEED_DEV_I3C]            = 0x74C20000,
+     [ASPEED_DEV_UART0]          = 0x74C33000,
+@@ -108,6 +112,14 @@ static const AspeedUnimpDevice aspeed_soc_ast1040_unimp_devs[] = {
+ #define AST1040_UNIMP_NUM ARRAY_SIZE(aspeed_soc_ast1040_unimp_devs)
+ QEMU_BUILD_BUG_ON(AST10X0_G2_UNIMP_NUM + AST1040_UNIMP_NUM > ASPEED_UNIMP_NUM);
+ 
++static const AspeedUnimpDevice aspeed_soc_ast1080_unimp_devs[] = {
++    { "spim0", "aspeed.spim0", ASPEED_DEV_SPIM0, 0x1000 },
++    { "spim1", "aspeed.spim1", ASPEED_DEV_SPIM1, 0x1000 },
++    { "spim2", "aspeed.spim2", ASPEED_DEV_SPIM2, 0x1000 },
++};
++#define AST1080_UNIMP_NUM ARRAY_SIZE(aspeed_soc_ast1080_unimp_devs)
++QEMU_BUILD_BUG_ON(AST10X0_G2_UNIMP_NUM + AST1080_UNIMP_NUM > ASPEED_UNIMP_NUM);
++
+ static qemu_irq aspeed_soc_ast1040_get_irq(AspeedSoCState *s, int dev)
+ {
+     Aspeed10x0SoCState *a = ASPEED10X0_SOC(s);
+@@ -187,7 +199,18 @@ static void aspeed_soc_ast1040_init(Object *obj)
+ 
+ static void aspeed_soc_ast1080_init(Object *obj)
+ {
++    AspeedSoCState *s = ASPEED_SOC(obj);
++    const AspeedUnimpDevice *unimp;
++    int i;
++
+     aspeed_soc_ast10x0_g2_init(obj);
++
++    for (i = 0; i < AST1080_UNIMP_NUM; i++) {
++        unimp = &aspeed_soc_ast1080_unimp_devs[i];
++        object_initialize_child(obj, unimp->qom_name,
++                                &s->unimp[AST10X0_G2_UNIMP_NUM + i],
++                                TYPE_UNIMPLEMENTED_DEVICE);
++    }
+ }
+ 
+ static bool aspeed_soc_ast10x0_g2_realize(Aspeed10x0SoCState *a, Error **errp)
+@@ -389,10 +412,23 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+ static void aspeed_soc_ast1080_realize(DeviceState *dev_soc, Error **errp)
+ {
+     Aspeed10x0SoCState *a = ASPEED10X0_SOC(dev_soc);
++    AspeedSoCState *s = ASPEED_SOC(a);
++    AspeedSoCClass *sc = ASPEED_SOC_GET_CLASS(s);
++    const AspeedUnimpDevice *unimp;
++    SysBusDevice *dev;
++    int i;
+ 
+     if (!aspeed_soc_ast10x0_g2_realize(a, errp)) {
+         return;
+     }
++
++    for (i = 0; i < AST1080_UNIMP_NUM; i++) {
++        unimp = &aspeed_soc_ast1080_unimp_devs[i];
++        dev = SYS_BUS_DEVICE(&s->unimp[AST10X0_G2_UNIMP_NUM + i]);
++        aspeed_mmio_map_unimplemented(s->memory, dev, unimp->region_name,
++                                      sc->memmap[unimp->memmap_idx],
++                                      unimp->size);
++    }
+ }
+ 
+ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+-- 
+2.53.0
+

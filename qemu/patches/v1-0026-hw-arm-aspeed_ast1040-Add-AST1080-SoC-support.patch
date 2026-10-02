@@ -1,0 +1,103 @@
+From 4aa88aebe3bcd551e577f1cbc9441e04629529de Mon Sep 17 00:00:00 2001
+From: Jamin Lin <jamin_lin@aspeedtech.com>
+Date: Tue, 29 Sep 2026 13:06:04 +0800
+Subject: [PATCH v1 26/30] hw/arm/aspeed_ast1040: Add AST1080 SoC support
+
+Add initial support for the Aspeed AST1080 SoC. The AST1080 reuses most
+of the AST1040 peripheral device models, as the two SoCs share nearly
+the same controllers including WDT, SCU, GPIO, SGPIO, ADC, I2C, FMC,
+and SPI.
+
+The common initialization and realization functions,
+aspeed_soc_ast10x0_g2_init() and aspeed_soc_ast10x0_g2_realize(),
+introduced in the previous patches are reused, so AST1080 can
+instantiate the existing AST1040 device models without defining
+duplicate device types.
+
+Signed-off-by: Jamin Lin <jamin_lin@aspeedtech.com>
+Change-Id: I1875ba42eb50ace73da2eb498ef597539c7b6c5d
+---
+ hw/arm/aspeed_ast1040.c | 47 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast1040.c b/hw/arm/aspeed_ast1040.c
+index 570ac8d8c9..d3df725948 100644
+--- a/hw/arm/aspeed_ast1040.c
++++ b/hw/arm/aspeed_ast1040.c
+@@ -185,6 +185,11 @@ static void aspeed_soc_ast1040_init(Object *obj)
+     }
+ }
+ 
++static void aspeed_soc_ast1080_init(Object *obj)
++{
++    aspeed_soc_ast10x0_g2_init(obj);
++}
++
+ static bool aspeed_soc_ast10x0_g2_realize(Aspeed10x0SoCState *a, Error **errp)
+ {
+     AspeedSoCState *s = ASPEED_SOC(a);
+@@ -381,6 +386,15 @@ static void aspeed_soc_ast1040_realize(DeviceState *dev_soc, Error **errp)
+     }
+ }
+ 
++static void aspeed_soc_ast1080_realize(DeviceState *dev_soc, Error **errp)
++{
++    Aspeed10x0SoCState *a = ASPEED10X0_SOC(dev_soc);
++
++    if (!aspeed_soc_ast10x0_g2_realize(a, errp)) {
++        return;
++    }
++}
++
+ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+ {
+     static const char * const valid_cpu_types[] = {
+@@ -408,12 +422,45 @@ static void aspeed_soc_ast1040_class_init(ObjectClass *klass, const void *data)
+     sc->num_cpus        = 1;
+ }
+ 
++static void aspeed_soc_ast1080_class_init(ObjectClass *klass, const void *data)
++{
++    static const char * const valid_cpu_types[] = {
++        ARM_CPU_TYPE_NAME("cortex-m4"), /* TODO cortex-m4f */
++        NULL
++    };
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    AspeedSoCClass *sc = ASPEED_SOC_CLASS(dc);
++
++    /* Reason: The Aspeed SoC can only be instantiated from a board */
++    dc->user_creatable = false;
++    dc->realize = aspeed_soc_ast1080_realize;
++
++    sc->valid_cpu_types = valid_cpu_types;
++    sc->silicon_rev     = AST1080_A0_SILICON_REV;
++    sc->sram_size[0]    = 128 * KiB;
++    sc->sram_size[1]    = 16 * MiB; /* Hyper RAM */
++    sc->uarts_num       = 13;
++    sc->sgpio_num       = 1;
++    sc->wdts_num        = 8;
++    sc->spis_num        = 2;
++    sc->uarts_base      = ASPEED_DEV_UART0;
++    sc->irqmap          = aspeed_soc_ast1040_irqmap;
++    sc->memmap          = aspeed_soc_ast1040_memmap;
++    sc->num_cpus        = 1;
++}
++
+ static const TypeInfo aspeed_soc_ast1040_types[] = {
+     {
+         .name           = "ast1040-a0",
+         .parent         = TYPE_ASPEED10X0_SOC,
+         .instance_init  = aspeed_soc_ast1040_init,
+         .class_init     = aspeed_soc_ast1040_class_init,
++    },
++    {
++        .name           = "ast1080-a0",
++        .parent         = TYPE_ASPEED10X0_SOC,
++        .instance_init  = aspeed_soc_ast1080_init,
++        .class_init     = aspeed_soc_ast1080_class_init,
+     }
+ };
+ 
+-- 
+2.53.0
+
