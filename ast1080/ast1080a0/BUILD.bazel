@@ -8,7 +8,6 @@ _PROFILE = "release"
 _RISCV = "target/riscv32imc-unknown-none-elf/{}".format(_PROFILE)
 
 bmc_pb_target(pb = [
-    "ast1040a0/bootmcu-rom-xip.bin",
     "ast1040a0/caliptra-fw.bin",
     "ast1040a0/ssmcu-rom-xip.bin",
 ])

@@ -24,14 +24,6 @@ zephyr_west_build(
     visibility = ["//qemu:__pkg__"],
 )
 
-zephyr_west_build(
-    name = "bootmcu",
-    board = "ast1040_evb/ast1040/bootmcu",
-    app = "aspeed-zephyr-project/apps/mcu-runtime",
-    output_bin = "zephyr-mcu-runtime.bin",
-    role = "bootmcu",
-)
-
 manifest_targets(
     platform = "ast1080",
     chip = "ast1080a0",
