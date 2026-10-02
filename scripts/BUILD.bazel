@@ -4,7 +4,8 @@
 exports_files(
     [
         "gen_streamingboot_i3c_images.py",
-        "mctp-i3c-recovery_2755",
+        "run_streaming_boot.sh",
+        "streamingboot_i3c_README.md",
     ],
     visibility = ["//visibility:public"],
 )

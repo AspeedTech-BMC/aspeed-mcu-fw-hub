@@ -167,19 +167,22 @@ bazel build //ast1040/ast1040a0/evb:image-streamingboot-i3c
 ```
 
 Output: `bazel-bin/ast1040/ast1040a0/evb/streamingboot-i3c/`, containing the
-256-byte-aligned `caliptra-fw`/`ssmcu-runtime`/auth-manifest images, the
-`mctp-i3c-recovery_2755` tool, the `streamingboot_from_i3c.sh` runner, and
-the `ast1040-cm4-test.pldm` streaming-boot package.
+256-byte-aligned `caliptra-fw`/auth-manifest/`ssmcu-runtime` images, the
+`ast1040-cm4-test.pldm` CM4 package, `run_streaming_boot.sh`, and a `README.md`.
 
-Copy the whole `streamingboot-i3c/` directory to the CA35 EVB (for example,
-`/tmp/streamingboot-i3c`) and run `./streamingboot_from_i3c.sh` there over
-the raw I3C recovery device to stream `caliptra-fw`/auth-manifest/`ssmcu-runtime`.
+Copy the whole directory to the AST2700 BMC and run the script there:
 
-The `.pldm` package is a separate delivery path — it is not sent by
-`streamingboot_from_i3c.sh` (which only streams the three `.bin` images over
-raw I3C). It is the PLDM-over-MCTP firmware package for the CM4 image
-update flow, delivered by whatever PLDM/MCTP update client the BMC or host
-side uses.
+```bash
+scp -O -r bazel-bin/ast1040/ast1040a0/evb/streamingboot-i3c root@<bmc>:/tmp/
+ssh root@<bmc> sh /tmp/streamingboot-i3c/run_streaming_boot.sh
+```
+
+The script streams the three images with `ocp-recovery-tool` (OCP recovery
+over I3C14), sets up the MCTP endpoint through mctpd, and then updates the CM4
+image through pldmd. The BMC needs `CONFIG_I3C_OCP_RECOVERY`,
+`ocp-recovery-tool`, `mctpd`, and `pldmd`. See the staged `README.md`
+(source: `scripts/streamingboot_i3c_README.md`) for the manual steps and
+troubleshooting.
 
 This target builds its own `ssmcu-runtime-streamingboot-i3c` binary (with
 the `test-pldm-streaming-boot` Cargo feature) and its own auth-manifest

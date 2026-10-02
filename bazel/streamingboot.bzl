@@ -7,7 +7,8 @@ def streamingboot_i3c_targets(
         ssmcu_runtime_target,
         auth_manifest_target,
         gen_script,
-        mctp_tool,
+        runner,
+        readme,
         pldm_manifest_template = None,
         pldm_output_name = None,
         flash_image_target = ":aspeed-manifest-flash-image.bin"):
@@ -20,15 +21,16 @@ def streamingboot_i3c_targets(
         ssmcu_runtime_target,
         auth_manifest_target,
         gen_script,
-        mctp_tool,
+        runner,
+        readme,
     ]
 
     _outs = [
         "{}/caliptra-fw_align_256.bin".format(_STAGE),
         "{}/{}-auth-manifest.bin".format(_STAGE, _IMAGE_PREFIX),
         "{}/ssmcu-runtime_align_256.bin".format(_STAGE),
-        "{}/mctp-i3c-recovery_2755".format(_STAGE),
-        "{}/streamingboot_from_i3c.sh".format(_STAGE),
+        "{}/run_streaming_boot.sh".format(_STAGE),
+        "{}/README.md".format(_STAGE),
     ]
 
     _cmd_lines = [
@@ -38,7 +40,8 @@ def streamingboot_i3c_targets(
         "  --caliptra-fw $$(realpath $(location {})) \\".format(caliptra_fw_target),
         "  --auth-manifest $$(realpath $(location {})) \\".format(auth_manifest_target),
         "  --ssmcu-runtime $$(realpath $(location {})) \\".format(ssmcu_runtime_target),
-        "  --mctp-tool $$(realpath $(location {})) \\".format(mctp_tool),
+        "  --runner $$(realpath $(location {})) \\".format(runner),
+        "  --readme $$(realpath $(location {})) \\".format(readme),
         "  --image-prefix {} \\".format(_IMAGE_PREFIX),
         "  --output-dir $$OUTDIR",
     ]
