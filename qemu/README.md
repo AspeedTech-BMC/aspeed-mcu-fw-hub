@@ -7,7 +7,7 @@ QEMU is fetched by Bazel (not manually cloned), pinned to a fixed commit.
 Edit `QEMU_COMMIT` in `/MODULE.bazel`:
 
 ```
-QEMU_COMMIT = "5ef0ecc5942ee07bb581cc96a97bbfc0fdf4005c"
+QEMU_COMMIT = "<commit-hash>"
 ```
 
 Set it to the commit hash of the upstream `qemu/qemu.git` revision you want,
@@ -22,8 +22,8 @@ the "Adding / updating a patch" section below for how to rebase them.
 
 ## Patches
 
-Patches under `qemu/patches/` are applied on top of `QEMU_COMMIT`, in
-filename order, via `patch_args = ["-p1"]`.
+Patches under `qemu/patches/` are applied on top of `QEMU_COMMIT`, in the
+order listed in `QEMU_PATCHES` in `/MODULE.bazel`, via `patch_args = ["-p1"]`.
 
 Naming follows `git format-patch` convention: `0001-xxx.patch`,
 `0002-xxx.patch`, ... An optional `vN-` prefix (e.g. `v1-0001-xxx.patch`)

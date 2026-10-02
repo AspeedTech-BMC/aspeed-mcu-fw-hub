@@ -194,9 +194,11 @@ of the test feature while recovery still authenticates correctly.
 ```
 Offset      Hex          File
 0 KB        0x00000000   bmc-pb SSMCU ROM (ssmcu ROM)
-512 KB      0x00080000   bmc-pb XIP ROM (bootmcu ROM)
-1024 KB     0x00100000   aspeed-manifest-flash-image.bin
+160 KB      0x00028000   bmc-pb XIP ROM (bootmcu ROM, AST1040 only)
+320 KB      0x00050000   ASPEED Manifest Flash image
 ```
+
+AST1080 images have no bootmcu ROM and runtime firmware.
 
 Output: `bazel-bin/<platform>/<chip>/<board>/<platform>.bin` (4 MB, 0xFF-padded)
 
@@ -336,9 +338,8 @@ git -C bmc-pb pull
 
 ## Supported Platforms
 
-| OS    | Architecture            |
-|-------|-------------------------|
-| Linux | x86_64                  |
-| Linux | aarch64                 |
-| macOS | x86_64                  |
-| macOS | aarch64 (Apple Silicon) |
+Tested on Ubuntu 24.04 (x86_64).
+
+| OS           | Architecture |
+|--------------|--------------|
+| Ubuntu 24.04 | x86_64       |

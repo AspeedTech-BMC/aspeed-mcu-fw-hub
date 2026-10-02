@@ -24,3 +24,7 @@ tools/
 
 # Project-specific
 bmc-pb/
+
+# Editor swap and backup files
+*.swp
+*.bak
