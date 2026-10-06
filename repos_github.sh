@@ -12,7 +12,7 @@ ASPEED_ZEPHYR_PROJECT_COMMIT=""
 REPOS=("caliptra-mcu-sw" "cptra_imgtool" "bmc-pb")
 
 CALIPTRA_MCU_SW_REMOTE="https://github.com/AspeedTech-BMC/caliptra-mcu-sw.git"
-CALIPTRA_MCU_SW_BRANCH="master"
+CALIPTRA_MCU_SW_BRANCH="aspeed-main-2.1-rt"
 CALIPTRA_MCU_SW_COMMIT=""
 
 CPTRA_IMGTOOL_REMOTE="https://github.com/AspeedTech-BMC/cptra_imgtool.git"

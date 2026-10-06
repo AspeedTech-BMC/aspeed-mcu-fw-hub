@@ -298,7 +298,7 @@ Edit the appropriate file to switch branches or pin to a specific commit before 
 ```bash
 # repos_github.sh (example)
 CALIPTRA_MCU_SW_REMOTE="https://github.com/AspeedTech-BMC/caliptra-mcu-sw.git"
-CALIPTRA_MCU_SW_BRANCH="master"
+CALIPTRA_MCU_SW_BRANCH="aspeed-main-2.1-rt"
 CALIPTRA_MCU_SW_COMMIT=""        # leave empty to use branch HEAD
 
 CPTRA_IMGTOOL_REMOTE="https://github.com/AspeedTech-BMC/cptra_imgtool.git"
